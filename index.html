@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Smart Ferry Dashboard</title>
+  
+  <!-- PWA Links (Now points to your physical manifest file) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#050505" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f5" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #050505;
+      --bg-solid: #0d0d0d;
+      --card-bg: rgba(18, 18, 18, 0.75);
+      --row-bg: rgba(255, 255, 255, 0.02);
+      --row-soon-bg: #1a1a1a;
+      --border: rgba(255, 255, 255, 0.12);
+      --border-bright: rgba(255, 255, 255, 0.25);
+      --fg-main: #ffffff;
+      --fg-muted: #888888;
+      --accent-red: #ea3323;
+      --accent-white: #e5e5e5;
+      --track-bg: rgba(255, 255, 255, 0.1);
+      --chip-active: rgba(255, 255, 255, 0.05);
+      --dot-matrix: rgba(255, 255, 255, 0.08);
+      --shadow-heavy: rgba(0, 0, 0, 0.8);
+      
+      /* Re-introducing explicitly rounded corners */
+      --radius-xl: 24px;
+      --radius-sm: 12px;
+      --radius-pill: 100px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f5f5; --bg-solid: #ebebeb;
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --row-bg: rgba(0, 0, 0, 0.02); --row-soon-bg: #ffffff;
+        --border: rgba(0, 0, 0, 0.12); --border-bright: rgba(0, 0, 0, 0.35);
+        --fg-main: #111111; --fg-muted: #666666;
+        --accent-red: #d92d20; --accent-white: #111111; 
+        --track-bg: rgba(0, 0, 0, 0.15); --chip-active: rgba(0, 0, 0, 0.05);
+        --dot-matrix: rgba(0, 0, 0, 0.08); --shadow-heavy: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif; background-color: var(--bg);
+      background-image: radial-gradient(circle, var(--dot-matrix) 1px, transparent 1px);
+      background-size: 16px 16px; background-position: center center;
+      color: var(--fg-main); display: flex; justify-content: center;
+      min-height: 100dvh; padding: 16px; position: relative;
+      transition: background-color 0.3s, color 0.3s; overflow-x: hidden;
+    }
+
+    .noise-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 50; opacity: 0.04;
+      background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+    }
+
+    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; padding-top: 12px; z-index: 1; }
+
+    /* TYPOGRAPHY */
+    .text-mono { font-family: 'Space Mono', monospace; }
+    .text-caps { text-transform: uppercase; letter-spacing: 0.12em; }
+    .text-muted { color: var(--fg-muted); }
+
+    /* HEADER */
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      cursor: pointer; user-select: none; padding: 8px; margin: -8px; border-radius: var(--radius-sm); transition: background 0.2s;
+    }
+    .header:active { background: var(--chip-active); }
+    .route-label { font-size: 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;}
+    .route-title { font-size: 22px; font-weight: 700; letter-spacing: 0.05em; }
+
+    /* ICONS */
+    .gps-icon { width: 14px; height: 14px; stroke: var(--fg-muted); transition: stroke 0.3s; }
+    .gps-icon.locating { stroke: var(--accent-red); animation: spin 2s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .blinking-dot { width: 6px; height: 6px; background-color: var(--accent-red); border-radius: 50%; box-shadow: 0 0 8px rgba(234, 51, 35, 0.4); animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+    /* ANIMATIONS */
+    .anim-layer { perspective: 1000px; transform-style: preserve-3d; }
+    @keyframes flipOut { 0% { transform: rotateX(0deg); opacity: 1; } 100% { transform: rotateX(90deg); opacity: 0; } }
+    @keyframes flipIn { 0% { transform: rotateX(-90deg); opacity: 0; } 100% { transform: rotateX(0deg); opacity: 1; } }
+    .flip-out { animation: flipOut 0.2s ease-in forwards; }
+    .flip-in { animation: flipIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    
+    /* MAIN CARD - Removed red top border */
+    .card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 24px;
+      backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+      box-shadow: 0 24px 48px var(--shadow-heavy);
+    }
+    .card-header { font-size: 10px; margin-bottom: 16px; display: flex; justify-content: space-between;}
+    .card-body { display: flex; justify-content: space-between; align-items: flex-end; }
+    .main-time { font-size: 56px; font-weight: 700; line-height: 0.8; letter-spacing: -0.04em; margin-bottom: -2px; transition: font-size 0.3s, color 0.3s; }
+    .main-time.suspended { font-size: 38px; color: var(--accent-red); letter-spacing: 0.02em; }
+    
+    .status-group { text-align: right; display: flex; flex-direction: column; gap: 6px; }
+    .countdown { color: var(--accent-white); font-size: 12px; font-weight: 700; transition: color 0.3s;}
+    
+    /* PROGRESS BAR - Now serves as the primary red visual anchor */
+    .progress-track { 
+      width: 100%; height: 4px; 
+      background: repeating-linear-gradient(90deg, var(--track-bg), var(--track-bg) 4px, transparent 4px, transparent 8px); 
+      margin-top: 20px; border-radius: 2px; overflow: hidden; 
+    }
+    .progress-fill { 
+      height: 100%; 
+      background: var(--accent-red); /* Signature red here instead of border */
+      width: 0%; 
+      transition: width 1s linear; 
+    }
+
+    /* CHIPS - Reverted to soft pill shape */
+    .chip-container { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 20px; padding-bottom: 4px;}
+    .chip-container::-webkit-scrollbar { display: none; }
+    .chip { 
+      padding: 6px 12px; 
+      border-radius: var(--radius-pill); /* Explicitly forces pill shape */
+      border: 1px solid var(--border); font-size: 10px; color: var(--fg-muted); white-space: nowrap; 
+    }
+    .chip.active { color: var(--fg-main); border-color: var(--border-bright); background: var(--chip-active); }
+
+    /* LIST */
+    .list-header { display: flex; justify-content: space-between; font-size: 10px; margin: 24px 4px 12px 4px; }
+    .list-container { display: flex; flex-direction: column; gap: 6px; }
+    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background-color: var(--bg-solid); font-size: 14px; color: var(--fg-muted); }
+    .list-row.is-soon { background-color: var(--row-soon-bg); border-color: var(--border-bright); color: var(--fg-main); }
+    
+    .footer { display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: auto; padding: 24px 4px; opacity: 0.5; }
+  </style>
+</head>
+<body>
+
+  <div class="noise-overlay"></div>
+
+  <div class="app-container">
+    <header class="header" onclick="triggerFlipToggle()">
+      <div>
+        <div class="route-label text-caps text-muted">
+          <svg class="gps-icon" id="gps-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+          </svg>
+          <span id="location-status">Locating</span>
+          <span style="opacity: 0.4;">/ TAP TO FLIP</span>
+        </div>
+        <div class="route-title text-caps" id="main-route-title">Mui Wo → Central</div>
+      </div>
+      <div style="text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+        <div class="text-mono text-muted" style="font-size: 10px;" id="now-date">--</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="blinking-dot"></span>
+          <span class="text-mono" style="font-size: 14px;" id="now-time">--:--:--</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="anim-layer" id="card-layer">
+      <section class="card">
+        <div class="card-header text-caps text-muted">
+          <span>Departure Time</span>
+          <span id="mode-chip" style="color: var(--fg-main);">Loading...</span>
+        </div>
+        
+        <div class="card-body">
+          <div class="main-time text-mono" id="next-time">--:--</div>
+          <div class="status-group">
+            <div class="countdown text-caps" id="countdown">—</div>
+          </div>
+        </div>
+
+        <div class="progress-track"><div class="progress-fill" id="progress-bar"></div></div>
+
+        <div class="chip-container text-caps">
+          <div class="chip active" id="origin-chip">Mui Wo Pier</div>
+          <div class="chip text-muted" style="border: none; padding: 6px 0;">➔</div>
+          <div class="chip" id="dest-chip">Central Pier 6</div>
+          <div class="chip text-muted" id="fare-chip" style="margin-left: auto; border-color: var(--border-bright); font-weight: 600;">FARE: --</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="anim-layer" id="list-layer">
+      <section>
+        <div class="list-header text-caps text-muted"><span>Subsequent Departures</span></div>
+        <div class="list-container text-mono" id="timetable-list"></div>
+      </section>
+    </div>
+
+    <footer class="footer text-muted text-caps">
+      <span id="api-status">Live Weather Intercepts</span>
+      <span>Widget v4.1</span>
+    </footer>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err)); }
+
+    const TIMETABLES = {
+      "muiwo-central": {
+        title: "Mui Wo → Central", origin: "Mui Wo Pier", dest: "Central Pier 6",
+        weekday: ["03:40","05:55","06:20","06:50","07:15","07:40","08:10","08:40","09:10","09:40","10:10","10:40","11:10","11:40","12:10","12:40","13:10","13:40","14:10","14:40","15:10","15:40","16:10","16:40","17:10","17:40","18:10","18:40","19:10","19:40","20:10","20:40","21:10","21:40","22:10","22:40","23:10","23:40"],
+        sunday: ["03:40","06:20","07:05","08:00","08:40","09:20","10:00","10:40","11:20","12:00","12:40","13:20","14:00","14:40","15:20","16:00","16:40","17:20","18:00","18:40","19:20","20:00","20:40","21:20","22:00","22:40","23:20"]
+      },
+      "central-muiwo": {
+        title: "Central → Mui Wo", origin: "Central Pier 6", dest: "Mui Wo Pier",
+        weekday: ["03:00","07:00","07:40","08:30","09:00","09:50","10:30","11:30","12:30","13:30","14:30","15:20","16:00","16:40","17:20","18:00","18:40","19:30","20:10","21:00","21:50","22:40","23:30","00:30"],
+        sunday: ["03:00","07:00","07:40","08:20","09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00","21:40","22:20","23:00","23:40","00:30"]
+      }
+    };
+    
+    const FARES = { weekday: "HK$33.50", sunday: "HK$48.50" };
+
+    let currentRouteKey = "muiwo-central"; 
+    let isManualOverride = false;
+    let dynamicHolidays = new Set(["2026-01-01", "2026-12-25"]);
+    let weatherSuspended = false; let weatherReason = "";
+
+    const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
+
+    async function checkWeather() {
+      try {
+        const res = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en");
+        const data = await res.json();
+        const warnings = Object.keys(data);
+        const isTyphoon = warnings.some(k => k.startsWith("WTY8") || k.startsWith("WTY9") || k.startsWith("WTY10"));
+        const isBlackRain = warnings.some(k => k.startsWith("WTB"));
+        
+        if (isTyphoon) { weatherSuspended = true; weatherReason = "T8+ SIGNAL ACTIVE"; } 
+        else if (isBlackRain) { weatherSuspended = true; weatherReason = "BLACK RAINSTORM"; } 
+        else { weatherSuspended = false; }
+        updateUI(); 
+      } catch(e) {}
+    }
+
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371, dLat = (lat2 - lat1) * (Math.PI / 180), dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function initLocation() {
+      const icon = document.getElementById("gps-icon");
+      if ("geolocation" in navigator) {
+        icon.classList.add("locating");
+        navigator.geolocation.getCurrentPosition((pos) => {
+          if (isManualOverride) return;
+          const distToCentral = getDistanceFromLatLonInKm(pos.coords.latitude, pos.coords.longitude, COORDS.central.lat, COORDS.central.lon);
+          const distToMuiWo = getDistanceFromLatLonInKm(pos.coords.latitude, pos.coords.longitude, COORDS.muiwo.lat, COORDS.muiwo.lon);
+          currentRouteKey = (distToCentral < distToMuiWo) ? "central-muiwo" : "muiwo-central";
+          icon.classList.remove("locating");
+          document.getElementById("location-status").textContent = "GPS LOCKED";
+          updateUI();
+        }, () => {
+          icon.classList.remove("locating");
+          document.getElementById("location-status").textContent = "GPS OFF";
+        }, { maximumAge: 60000, timeout: 5000 });
+      }
+    }
+
+    function triggerFlipToggle() {
+      const card = document.getElementById("card-layer"); const list = document.getElementById("list-layer");
+      card.classList.remove("flip-in"); list.classList.remove("flip-in");
+      card.classList.add("flip-out"); setTimeout(() => list.classList.add("flip-out"), 50); 
+      setTimeout(() => {
+        isManualOverride = true; currentRouteKey = (currentRouteKey === "muiwo-central") ? "central-muiwo" : "muiwo-central";
+        document.getElementById("location-status").textContent = "MANUAL";
+        document.getElementById("gps-icon").classList.remove("locating"); updateUI(); 
+        card.classList.remove("flip-out"); list.classList.remove("flip-out");
+        card.classList.add("flip-in"); setTimeout(() => list.classList.add("flip-in"), 50);
+      }, 250); 
+    }
+
+    function pad(num) { return num.toString().padStart(2, "0"); }
+    function parseTimeToMinutes(str) { const [h, m] = str.split(":").map(Number); return h * 60 + m; }
+    function formatTimeHMS(date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`; }
+    
+    function getScheduleForDay(date) {
+      const day = date.getDay();
+      const dateFormatted = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      if (day === 0 || dynamicHolidays.has(dateFormatted)) return { key: "sunday", label: "Sunday/PH" };
+      return { key: "weekday", label: "Weekday" };
+    }
+
+    function buildTimetableList(wrappedTimes, nextMinutes, nowSecsTotal) {
+      const container = document.getElementById("timetable-list");
+      container.innerHTML = "";
+      const upcoming = wrappedTimes.filter((t) => t.mins > nextMinutes).slice(0, 3);
+      upcoming.forEach((t, index) => {
+        const row = document.createElement("div"); row.className = `list-row ${index === 0 ? "is-soon" : ""}`;
+        const diffSecs = (t.mins * 60) - nowSecsTotal; const diffMins = Math.floor(diffSecs / 60);
+        let subCountStr = "SOON";
+        if (diffMins > 0) {
+          let h = Math.floor(diffMins / 60); let m = diffMins % 60;
+          subCountStr = h > 0 ? `${h}H ${m}M` : `${m}M`;
+        }
+        row.innerHTML = `
+          <span style="font-weight: 700;">${t.str}</span>
+          <div style="display: flex; gap: 12px; align-items: center; font-family: 'Space Grotesk', sans-serif;">
+            <span style="font-size: 10px; color: var(--fg-muted); letter-spacing: 0.05em;">IN ${subCountStr}</span>
+            <span style="font-size: 12px; font-weight: 600; min-width: 20px; text-align: right; color: var(--fg-main);">+${index + 1}</span>
+          </div>`;
+        container.appendChild(row);
+      });
+    }
+
+    function updateUI() {
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes(); const nowSecsTotal = (nowMins * 60) + now.getSeconds();
+      const routeData = TIMETABLES[currentRouteKey]; const scheduleInfo = getScheduleForDay(now);
+      const times = routeData[scheduleInfo.key];
+
+      document.getElementById("main-route-title").textContent = routeData.title;
+      document.getElementById("origin-chip").textContent = routeData.origin;
+      document.getElementById("dest-chip").textContent = routeData.dest;
+      document.getElementById("mode-chip").textContent = scheduleInfo.label;
+      document.getElementById("fare-chip").textContent = `FARE: ${FARES[scheduleInfo.key]}`;
+      document.getElementById("now-time").textContent = formatTimeHMS(now);
+      document.getElementById("now-date").textContent = now.toLocaleDateString('en-GB', { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
+
+      const timeEl = document.getElementById("next-time");
+      const countdownEl = document.getElementById("countdown");
+      const progressBar = document.getElementById("progress-bar");
+
+      if (weatherSuspended) {
+        timeEl.textContent = "SUSPENDED"; timeEl.classList.add("suspended");
+        countdownEl.textContent = weatherReason; countdownEl.style.color = "var(--accent-red)";
+        progressBar.style.width = "100%"; 
+        document.getElementById("timetable-list").innerHTML = `
+          <div class="list-row" style="justify-content: center;">
+            <span style="color: var(--accent-red); font-weight: 600; font-size: 12px; letter-spacing: 0.1em;">ALL SERVICES HALTED BY HKO</span>
+          </div>`;
+        return;
+      } else {
+        timeEl.classList.remove("suspended");
+      }
+
+      let wrappedTimes = times.map(t => {
+        let m = parseTimeToMinutes(t);
+        if (m < 180 && nowMins > 1200) m += 1440; 
+        return { str: t, mins: m };
+      }).sort((a, b) => a.mins - b.mins);
+
+      let nextTimeObj = wrappedTimes.find(t => t.mins >= nowMins);
+      if (!nextTimeObj && wrappedTimes.length > 0) { nextTimeObj = { str: wrappedTimes[0].str, mins: wrappedTimes[0].mins + 1440 }; }
+
+      if (nextTimeObj) {
+        timeEl.textContent = nextTimeObj.str;
+        const diffSecs = (nextTimeObj.mins * 60) - nowSecsTotal;
+        const diffMins = Math.floor(diffSecs / 60);
+        let pct = Math.max(0, Math.min((diffSecs / 3600) * 100, 100)); 
+        progressBar.style.width = `${pct}%`;
+
+        // The progress bar color is now entirely managed by CSS (it stays red permanently).
+        // The text turns red to warn you when boarding is imminent.
+        if (diffSecs <= 900) {
+          countdownEl.style.color = "var(--accent-red)";
+        } else {
+          countdownEl.style.color = "var(--accent-white)";
+        }
+
+        if (diffSecs <= 0) {
+          countdownEl.textContent = "BOARD NOW";
+        } else {
+          let desc = [];
+          if (Math.floor(diffMins / 60) > 0) desc.push(`${Math.floor(diffMins / 60)}H`);
+          if (diffMins % 60 > 0 || Math.floor(diffMins / 60) === 0) desc.push(`${diffMins % 60}M`);
+          countdownEl.textContent = `${desc.join(" ")} REMAINING`;
+        }
+      }
+      buildTimetableList(wrappedTimes, nextTimeObj ? nextTimeObj.mins : Infinity, nowSecsTotal);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      checkWeather(); initLocation(); updateUI(); 
+      setInterval(updateUI, 1000); setInterval(checkWeather, 60000 * 5); 
+    });
+  </script>
+</body>
+</html>
