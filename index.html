@@ -56,7 +56,6 @@
       background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
     }
 
-    /* Added extra bottom padding buffer here to prevent edge clipping */
     .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; padding-top: 12px; padding-bottom: 40px; z-index: 1; }
 
     .text-mono { font-family: 'Space Mono', monospace; }
@@ -94,8 +93,9 @@
     .main-time { font-size: 56px; font-weight: 700; line-height: 0.8; letter-spacing: -0.04em; margin-bottom: -2px; transition: font-size 0.3s, color 0.3s; }
     .main-time.suspended { font-size: 38px; color: var(--accent-red); letter-spacing: 0.02em; }
     
-    .status-group { text-align: right; display: flex; flex-direction: column; gap: 6px; }
+    .status-group { text-align: right; display: flex; flex-direction: column; gap: 4px; }
     .countdown { color: var(--accent-white); font-size: 12px; font-weight: 700; transition: color 0.3s;}
+    .eta-main { font-size: 10px; letter-spacing: 0.08em; }
     
     .progress-track { width: 100%; height: 4px; background: repeating-linear-gradient(90deg, var(--track-bg), var(--track-bg) 4px, transparent 4px, transparent 8px); margin-top: 20px; border-radius: 2px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--accent-red); width: 0%; transition: width 1s linear; }
@@ -166,6 +166,7 @@
           <div class="main-time text-mono" id="next-time">--:--</div>
           <div class="status-group">
             <div class="countdown text-caps" id="countdown">—</div>
+            <div class="eta-main text-muted text-mono" id="main-eta">ETA --:--</div>
           </div>
         </div>
 
@@ -216,6 +217,7 @@
     };
     
     const FARES = { weekday: "HK$33.50", sunday: "HK$48.50" };
+    const JOURNEY_DURATION_MINS = 35; // 35m crossing duration
 
     let currentRouteKey = "muiwo-central"; 
     let isManualOverride = false;
@@ -295,6 +297,13 @@
     function parseTimeToMinutes(str) { const [h, m] = str.split(":").map(Number); return h * 60 + m; }
     function formatTimeHMS(date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`; }
     
+    // Helper to calculate arrival time string given departure string and duration
+    function calculateArrivalTime(timeStr, durationMins) {
+      const [h, m] = timeStr.split(":").map(Number);
+      let totalMins = (h * 60 + m + durationMins) % 1440;
+      return `${pad(Math.floor(totalMins / 60))}:${pad(totalMins % 60)}`;
+    }
+
     function getScheduleForDay(date) {
       const day = date.getDay();
       const dateFormatted = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -320,8 +329,9 @@
           let h = Math.floor(diffMins / 60); let m = diffMins % 60;
           subCountStr = h > 0 ? `${h}H ${m}M` : `${m}M`;
         }
+        const arrivalStr = calculateArrivalTime(t.str, JOURNEY_DURATION_MINS);
         row.innerHTML = `
-          <span style="font-weight: 700;">${t.str}</span>
+          <span style="font-weight: 700;">${t.str} <span style="font-size: 10px; font-weight: 400; color: var(--fg-muted);">ARR ${arrivalStr}</span></span>
           <div style="display: flex; gap: 12px; align-items: center; font-family: 'Space Grotesk', sans-serif;">
             <span style="font-size: 10px; color: var(--fg-muted); letter-spacing: 0.05em;">IN ${subCountStr}</span>
             <span style="font-size: 12px; font-weight: 600; min-width: 20px; text-align: right; color: var(--fg-main);">+${index + 1}</span>
@@ -337,8 +347,9 @@
           let h = Math.floor(diffMins / 60); let m = diffMins % 60;
           subCountStr = h > 0 ? `${h}H ${m}M` : `${m}M`;
         }
+        const arrivalStr = calculateArrivalTime(t.str, JOURNEY_DURATION_MINS);
         row.innerHTML = `
-          <span style="font-weight: 700;">${t.str}</span>
+          <span style="font-weight: 700;">${t.str} <span style="font-size: 10px; font-weight: 400; color: var(--fg-muted);">ARR ${arrivalStr}</span></span>
           <div style="display: flex; gap: 12px; align-items: center; font-family: 'Space Grotesk', sans-serif;">
             <span style="font-size: 10px; color: var(--fg-muted); letter-spacing: 0.05em;">IN ${subCountStr}</span>
             <span style="font-size: 12px; font-weight: 600; min-width: 20px; text-align: right; color: var(--fg-muted);">+${index + 4}</span>
@@ -370,11 +381,13 @@
 
       const timeEl = document.getElementById("next-time");
       const countdownEl = document.getElementById("countdown");
+      const mainEtaEl = document.getElementById("main-eta");
       const progressBar = document.getElementById("progress-bar");
 
       if (weatherSuspended) {
         timeEl.textContent = "SUSPENDED"; timeEl.classList.add("suspended");
         countdownEl.textContent = weatherReason; countdownEl.style.color = "var(--accent-red)";
+        mainEtaEl.textContent = "ETA --:--";
         progressBar.style.width = "100%"; 
         document.getElementById("timetable-list").innerHTML = `
           <div class="list-row" style="justify-content: center;">
@@ -396,6 +409,9 @@
 
       if (nextTimeObj) {
         timeEl.textContent = nextTimeObj.str;
+        const arrivalStr = calculateArrivalTime(nextTimeObj.str, JOURNEY_DURATION_MINS);
+        mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
+
         const diffSecs = (nextTimeObj.mins * 60) - nowSecsTotal;
         const diffMins = Math.floor(diffSecs / 60);
         
