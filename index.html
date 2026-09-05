@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Smart Ferry Dashboard</title>
   
   <link rel="manifest" href="manifest.json">
@@ -43,6 +43,12 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    /* Fix: Apply the solid background color directly to html and body for full bleed */
+    html {
+      background-color: var(--bg);
+      transition: background-color 0.3s;
+    }
 
     body {
       font-family: 'Space Grotesk', system-ui, sans-serif; background-color: var(--bg);
