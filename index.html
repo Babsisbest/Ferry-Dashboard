@@ -6,6 +6,7 @@
   <title>Smart Ferry Dashboard</title>
   
   <link rel="manifest" href="manifest.json">
+  <!-- Fixed: Explicit theme colors for dark and light OS modes -->
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#050505" />
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f5" />
   <meta name="mobile-web-app-capable" content="yes">
@@ -231,7 +232,7 @@
     let currentGpsProgress = 0;
     let lastLat = null;
     let lastLon = null;
-    let lockedActiveTrip = null; // Locks onto the exact ferry trip you boarded
+    let lockedActiveTrip = null;
 
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
 
@@ -280,15 +281,13 @@
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          // If in open harbor corridor
           if (distToCentral > 0.4 && distToMuiWo > 0.4 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
             userIsInTransit = true;
             currentGpsProgress = calculateGpsProgress(lat, lon, currentRouteKey);
           } else {
-            // Only drop out of transit if we are actually close to a pier (< 0.3 km)
             if (distToCentral < 0.3 || distToMuiWo < 0.3) {
               userIsInTransit = false;
-              lockedActiveTrip = null; // Reset trip lock when back at a pier
+              lockedActiveTrip = null;
             }
             if (!isManualOverride && !userIsInTransit) {
               currentRouteKey = (distToCentral < distToMuiWo) ? "central-muiwo" : "muiwo-central";
@@ -447,12 +446,10 @@
         return { str: t, mins: m };
       }).sort((a, b) => a.mins - b.mins);
 
-      // LOCKED IN-TRANSIT VOYAGE TRACKER
       if (userIsInTransit) {
         mainCard.classList.add("in-transit");
         cardStatusLabel.textContent = "GPS LIVE VOYAGE TRACKER";
         
-        // Lock onto the exact trip you boarded the first time in-transit is triggered
         if (!lockedActiveTrip) {
           let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
           lockedActiveTrip = departedTimes.length > 0 ? departedTimes[departedTimes.length - 1] : wrappedTimes[wrappedTimes.length - 1];
