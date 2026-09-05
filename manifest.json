@@ -1,16 +1,16 @@
 {
-  "name": "Ferry Dashboard",
+  "name": "Smart Ferry Dashboard",
   "short_name": "Ferry",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f5f5f5",
-  "theme_color": "#f5f5f5",
+  "background_color": "#09090B",
+  "theme_color": "#09090B",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='256' fill='%23f5f5f5'/%3E%3Ccircle cx='256' cy='256' r='140' stroke='%23111111' stroke-width='32' fill='none'/%3E%3Ccircle cx='256' cy='256' r='48' fill='%23ea3323'/%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
     }
   ]
 }

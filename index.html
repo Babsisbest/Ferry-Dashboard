@@ -6,12 +6,15 @@
   <title>Smart Ferry Dashboard</title>
   
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
+  <!-- Minimalist Stark Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>">
+
+  <meta name="theme-color" content="#09090B" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F5F5F5" media="(prefers-color-scheme: light)">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -19,196 +22,317 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #050505; --bg-solid: #0d0d0d; --card-bg: rgba(18, 18, 18, 0.75);
-      --row-bg: rgba(255, 255, 255, 0.02); --row-soon-bg: #1a1a1a;
-      --border: rgba(255, 255, 255, 0.12); --border-bright: rgba(255, 255, 255, 0.25);
-      --fg-main: #ffffff; --fg-muted: #888888;
-      --accent-red: #ea3323; --accent-white: #e5e5e5;
-      --track-bg: rgba(255, 255, 255, 0.1); --chip-active: rgba(255, 255, 255, 0.05);
-      --dot-matrix: rgba(255, 255, 255, 0.08); --shadow-heavy: rgba(0, 0, 0, 0.8);
-      --radius-xl: 24px; --radius-sm: 12px; --radius-pill: 100px;
+      
+      --bg: #09090B;
+      --surface: #18181B;
+      --border: #27272A;
+      --border-focus: #3F3F46;
+      
+      --text-main: #F4F4F5;
+      --text-sec: #A1A1AA;
+      --text-muted: #71717A;
+      
+      --accent: #E92D2D;
+      --accent-muted: rgba(233, 45, 45, 0.15);
+      
+      --track-bg: #27272A;
+      --dot-grid: radial-gradient(circle, #1F1F1F 1px, transparent 1px);
     }
 
     @media (prefers-color-scheme: light) {
       :root {
         color-scheme: light;
-        --bg: #f5f5f5; --bg-solid: #ebebeb; --card-bg: rgba(255, 255, 255, 0.85);
-        --row-bg: rgba(0, 0, 0, 0.02); --row-soon-bg: #ffffff;
-        --border: rgba(0, 0, 0, 0.12); --border-bright: rgba(0, 0, 0, 0.35);
-        --fg-main: #111111; --fg-muted: #666666;
-        --accent-red: #d92d20; --accent-white: #111111; 
-        --track-bg: rgba(0, 0, 0, 0.15); --chip-active: rgba(0, 0, 0, 0.05);
-        --dot-matrix: rgba(0, 0, 0, 0.08); --shadow-heavy: rgba(0, 0, 0, 0.1);
+        
+        --bg: #F5F5F5;
+        --surface: #FFFFFF;
+        --border: #D4D4D4;
+        --border-focus: #A3A3A3;
+        
+        --text-main: #000000;
+        --text-sec: #555555;
+        --text-muted: #888888;
+        
+        --accent: #D02121;
+        --accent-muted: rgba(208, 33, 33, 0.1);
+        
+        --track-bg: #E5E5E5;
+        --dot-grid: radial-gradient(circle, #DDDDDD 1px, transparent 1px);
       }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-    /* Fix: Apply the solid background color directly to html and body for full bleed */
-    html {
-      background-color: var(--bg);
-      transition: background-color 0.3s;
-    }
+    html { background-color: var(--bg); transition: background-color 0.3s ease; }
 
     body {
-      font-family: 'Space Grotesk', system-ui, sans-serif; background-color: var(--bg);
-      background-image: radial-gradient(circle, var(--dot-matrix) 1px, transparent 1px);
-      background-size: 16px 16px; background-position: center center;
-      color: var(--fg-main); display: flex; justify-content: center;
-      min-height: 100dvh; padding: 16px; position: relative;
-      transition: background-color 0.3s, color 0.3s; overflow-x: hidden;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background-color: var(--bg); color: var(--text-main);
+      display: flex; justify-content: center;
+      min-height: 100dvh; padding: 20px 16px; overflow-x: hidden;
+      
+      background-image: var(--dot-grid);
+      background-size: 16px 16px;
+      background-position: center top;
     }
 
-    .noise-overlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 50; opacity: 0.04;
-      background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+    /* Subtle Hardware Loading Screen */
+    #app-loader {
+      position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      gap: 16px; transition: opacity 0.4s ease;
+      background-image: var(--dot-grid);
+      background-size: 16px 16px;
+    }
+    .loader-dot {
+      width: 12px; height: 12px; background: var(--accent); border-radius: 50%;
+      box-shadow: 0 0 16px var(--accent-muted);
+      animation: pulseLoader 0.9s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes pulseLoader {
+      0% { transform: scale(0.7); opacity: 0.4; }
+      100% { transform: scale(1.3); opacity: 1; }
+    }
+    .loader-text {
+      font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 2.5px; text-transform: uppercase;
     }
 
-    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; padding-top: 12px; padding-bottom: 40px; z-index: 1; }
+    .mono { font-family: 'Space Mono', monospace; }
+    .caps { text-transform: uppercase; letter-spacing: 1px; }
 
-    .text-mono { font-family: 'Space Mono', monospace; }
-    .text-caps { text-transform: uppercase; letter-spacing: 0.12em; }
-    .text-muted { color: var(--fg-muted); }
+    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 28px; position: relative; padding-bottom: 40px;}
 
-    .header {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      cursor: pointer; user-select: none; padding: 8px; margin: -8px; border-radius: var(--radius-sm); transition: background 0.2s;
+    /* Route Tabs */
+    .tabs-container {
+      display: flex; gap: 8px; padding: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 100px;
     }
-    .header:active { background: var(--chip-active); }
-    .route-label { font-size: 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;}
-    .route-title { font-size: 22px; font-weight: 700; letter-spacing: 0.05em; }
+    .tab {
+      flex: 1; text-align: center; padding: 12px 0;
+      font-size: 12px; font-weight: 700; color: var(--text-muted);
+      border-radius: 100px; cursor: pointer; transition: all 0.2s;
+    }
+    .tab.active { background: var(--text-main); color: var(--bg); }
 
-    .gps-icon { width: 14px; height: 14px; stroke: var(--fg-muted); transition: stroke 0.3s; }
-    .gps-icon.locating { stroke: var(--accent-red); animation: spin 2s linear infinite; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    .blinking-dot { width: 6px; height: 6px; background-color: var(--accent-red); border-radius: 50%; box-shadow: 0 0 8px rgba(234, 51, 35, 0.4); animation: blink 1.5s infinite; }
+    /* Top Telemetry */
+    .telemetry { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 12px;}
+    .gps-block { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
+    .gps-indicator { width: 8px; height: 8px; background: var(--border); border-radius: 50%; }
+    .gps-indicator.active { background: var(--accent); box-shadow: 0 0 8px var(--accent-muted); animation: blink 2s infinite; }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-
-    .anim-layer { perspective: 1000px; transform-style: preserve-3d; }
-    @keyframes flipOut { 0% { transform: rotateX(0deg); opacity: 1; } 100% { transform: rotateX(90deg); opacity: 0; } }
-    @keyframes flipIn { 0% { transform: rotateX(-90deg); opacity: 0; } 100% { transform: rotateX(0deg); opacity: 1; } }
-    .flip-out { animation: flipOut 0.2s ease-in forwards; }
-    .flip-in { animation: flipIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     
+    .clock-block { display: flex; align-items: baseline; gap: 8px; }
+    .clock-date { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
+    .clock-time { font-size: 15px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px;}
+
+    /* Main Card */
     .card {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: var(--radius-xl); padding: 24px;
-      backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
-      box-shadow: 0 24px 48px var(--shadow-heavy);
-      transition: border-color 0.3s;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; display: flex; flex-direction: column;
+      transition: border-color 0.3s; position: relative;
     }
-    .card.in-transit { border-color: var(--accent-red); }
+    body.state-transit .card { border-color: var(--accent); box-shadow: 0 8px 32px var(--accent-muted); }
 
-    .card-header { font-size: 10px; margin-bottom: 16px; display: flex; justify-content: space-between;}
-    .card-body { display: flex; justify-content: space-between; align-items: flex-end; }
-    .main-time { font-size: 56px; font-weight: 700; line-height: 0.8; letter-spacing: -0.04em; margin-bottom: -2px; transition: font-size 0.3s, color 0.3s; }
-    .main-time.suspended { font-size: 38px; color: var(--accent-red); letter-spacing: 0.02em; }
+    .card-top { 
+      display: flex; justify-content: space-between; align-items: center; 
+      font-size: 11px; font-weight: 700; color: var(--text-sec); 
+      padding: 24px 24px 16px 24px;
+    }
     
-    .status-group { text-align: right; display: flex; flex-direction: column; gap: 4px; }
-    .countdown { color: var(--accent-white); font-size: 12px; font-weight: 700; transition: color 0.3s;}
-    .eta-main { font-size: 10px; letter-spacing: 0.08em; }
+    .time-flex { 
+      display: flex; justify-content: space-between; align-items: flex-end; 
+      padding: 0 24px 24px 24px;
+    }
+    .huge-time { font-size: 76px; font-weight: 700; letter-spacing: -4px; line-height: 0.85; margin-left: -4px;}
+    .huge-time.suspended { font-size: 36px; color: var(--accent); letter-spacing: -1px; line-height: 1; margin-left: 0; }
     
-    .progress-track { width: 100%; height: 4px; background: repeating-linear-gradient(90deg, var(--track-bg), var(--track-bg) 4px, transparent 4px, transparent 8px); margin-top: 20px; border-radius: 2px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent-red); width: 0%; transition: width 1s linear; }
+    .eta-box { text-align: right; display: flex; flex-direction: column; gap: 4px;}
+    .eta-label { font-size: 10px; font-weight: 700; color: var(--text-muted); }
+    .eta-val { font-size: 20px; font-weight: 700; letter-spacing: -1px;}
 
-    .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-bottom: 4px;}
-    .chip { padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-size: 10px; color: var(--fg-muted); white-space: nowrap; }
-    .chip.active { color: var(--fg-main); border-color: var(--border-bright); background: var(--chip-active); }
+    /* Solid Padded Progress Track */
+    .track-wrapper { 
+      position: relative; 
+      width: calc(100% - 48px);
+      height: 6px; 
+      background: var(--track-bg); 
+      margin: 0 auto; 
+      border-radius: 100px; 
+      overflow: hidden;
+    }
+    .track-fill { 
+      position: absolute; left: 0; top: 0; height: 100%; width: 0%;
+      background: var(--accent); transition: width 1s linear;
+      border-radius: 100px;
+    }
 
-    .list-header { display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin: 24px 4px 12px 4px; }
-    .list-container { display: flex; flex-direction: column; gap: 6px; }
-    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background-color: var(--bg-solid); font-size: 14px; color: var(--fg-muted); }
-    .list-row.is-soon { background-color: var(--row-soon-bg); border-color: var(--border-bright); color: var(--fg-main); }
+    /* Baseline Alignment */
+    .card-actions { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 16px 24px; background: rgba(0,0,0,0.15); border-radius: 0 0 20px 20px;
+      margin-top: 24px;
+    }
     
-    .expand-trigger { 
-      font-size: 10px; cursor: pointer; color: var(--fg-muted); letter-spacing: 0.12em; 
-      padding: 4px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border);
-      transition: all 0.2s ease; background: transparent; user-select: none;
+    .countdown-group { display: flex; flex-direction: column; gap: 2px; }
+    .countdown-title { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+    .countdown-val { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+    
+    .btn {
+      background: var(--bg); border: 1px solid var(--border-focus); color: var(--text-main);
+      padding: 10px 24px; border-radius: 100px; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
     }
-    .expand-trigger:hover, .expand-trigger:active { color: var(--fg-main); border-color: var(--border-bright); background: var(--chip-active); }
+    .btn:active { transform: scale(0.96); background: var(--border); }
+    
+    body.state-transit .btn { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 
-    .expandable-content {
-      max-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 6px;
-      transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-      opacity: 0; margin-top: 0px;
+    /* Timetable Section Outside */
+    .section-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 18px 0 10px 4px; letter-spacing: 1.5px;}
+    
+    .timetable-container {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 24px; display: flex; flex-direction: column;
     }
-    .expandable-content.open {
-      max-height: 1200px; opacity: 1; margin-top: 6px;
+    
+    .list-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 0; border-bottom: 1px solid var(--border);
+    }
+    .list-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .list-row:first-child { padding-top: 0; }
+    
+    .row-left { display: flex; align-items: baseline; gap: 16px; }
+    .row-time { font-size: 20px; font-weight: 700; letter-spacing: -1px; }
+    .row-arr { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .row-in { font-size: 14px; font-weight: 700; color: var(--text-sec); font-variant-numeric: tabular-nums;}
+    
+    .tmrw-tag { 
+      background: var(--text-main); color: var(--bg); font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 8px;
     }
 
-    .footer { display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: auto; padding: 24px 4px 8px 4px; opacity: 0.6; }
-    .footer-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--fg-muted); padding-bottom: 2px; transition: color 0.2s; }
-    .footer-link:active { color: var(--fg-main); }
+    .expandable-area { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .expandable-area.open { max-height: 1200px; }
+    
+    .expand-btn {
+      width: 100%; background: transparent; border: none; border-top: 1px solid var(--border);
+      color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 700;
+      padding: 18px 0 0 0; margin-top: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      transition: color 0.2s;
+    }
+    .expand-btn:active { color: var(--text-main); }
+
+    /* Animations */
+    .anim-layer { perspective: 1000px; }
+    @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.98); } }
+    @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+    .flip-out { animation: fadeOut 0.2s ease forwards; }
+    .flip-in { animation: fadeIn 0.3s ease forwards; }
+
+    /* Action Links */
+    .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 4px;}
+    .action-pill {
+      flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+      padding: 14px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
+      text-decoration: none; color: var(--text-muted); font-size: 11px; font-weight: 700; transition: all 0.2s;
+    }
+    .action-pill:active { border-color: var(--border-focus); color: var(--text-main); transform: scale(0.96); }
+    .action-icon { width: 14px; height: 14px; fill: currentColor; }
+
   </style>
 </head>
-<body>
+<body id="app-body" class="state-standby">
 
-  <div class="noise-overlay"></div>
+  <!-- Subtle Hardware Startup Loading Screen -->
+  <div id="app-loader">
+    <div class="loader-dot"></div>
+    <div class="loader-text mono">SYSTEM_BOOT // READY</div>
+  </div>
 
   <div class="app-container">
-    <header class="header" onclick="triggerFlipToggle()">
-      <div>
-        <div class="route-label text-caps text-muted">
-          <svg class="gps-icon" id="gps-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-          </svg>
-          <span id="location-status">Locating</span>
-          <span style="opacity: 0.4;">/ TAP TO FLIP</span>
-        </div>
-        <div class="route-title text-caps" id="main-route-title">Mui Wo → Central</div>
-      </div>
-      <div style="text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
-        <div class="text-mono text-muted" style="font-size: 10px;" id="now-date">--</div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="blinking-dot"></span>
-          <span class="text-mono" style="font-size: 14px;" id="now-time">--:--:--</span>
-        </div>
-      </div>
-    </header>
+    
+    <!-- Route Toggles -->
+    <div class="tabs-container caps">
+      <div class="tab active" id="tab-muiwo" onclick="setRoute('muiwo-central')">MUI WO ➔ CENTRAL</div>
+      <div class="tab" id="tab-central" onclick="setRoute('central-muiwo')">CENTRAL ➔ MUI WO</div>
+    </div>
 
-    <div class="anim-layer" id="card-layer">
-      <section class="card" id="main-card">
-        <div class="card-header text-caps text-muted">
-          <span id="card-status-label">Departure Time</span>
-          <span id="mode-chip" style="color: var(--fg-main);">Loading...</span>
+    <!-- Structured Telemetry Row -->
+    <div class="telemetry caps">
+      <div class="gps-block">
+        <div class="gps-indicator" id="gps-light"></div>
+        <span id="location-status">Locating</span>
+      </div>
+      <div class="clock-block">
+        <div class="clock-date mono" id="now-date">--</div>
+        <div class="clock-time mono" id="now-time">--:--</div>
+      </div>
+    </div>
+
+    <div class="anim-layer" id="data-layer">
+      
+      <!-- Main Card -->
+      <div class="card" id="main-card">
+        <div class="card-top caps">
+          <span id="card-status-label">Next Departure</span>
+          <div>
+            <span id="mode-chip" style="margin-right: 8px;">SUN/PH</span>
+            <span id="fare-chip" class="mono">HK$0.0</span>
+          </div>
         </div>
         
-        <div class="card-body">
-          <div class="main-time text-mono" id="next-time">--:--</div>
-          <div class="status-group">
-            <div class="countdown text-caps" id="countdown">—</div>
-            <div class="eta-main text-muted text-mono" id="main-eta">ETA --:--</div>
+        <div class="time-flex">
+          <div class="huge-time" id="next-time">--:--</div>
+          <div class="eta-box">
+            <div class="eta-label caps">Arrival</div>
+            <div class="eta-val mono" id="main-eta">--:--</div>
           </div>
         </div>
 
-        <div class="progress-track"><div class="progress-fill" id="progress-bar"></div></div>
-
-        <div class="chip-container text-caps">
-          <div class="chip active" id="origin-chip">Mui Wo Pier</div>
-          <div class="chip text-muted" style="border: none; padding: 6px 0;">➔</div>
-          <div class="chip" id="dest-chip">Central Pier 6</div>
-          <div class="chip text-muted" id="fare-chip" style="border-color: var(--border-bright); font-weight: 600;">FARE: --</div>
+        <!-- Solid Padded Progress Track -->
+        <div class="track-wrapper">
+          <div class="track-fill" id="progress-bar"></div>
         </div>
-      </section>
-    </div>
 
-    <div class="anim-layer" id="list-layer">
-      <section>
-        <div class="list-header text-caps text-muted">
-          <span>Subsequent Departures</span>
-          <div class="expand-trigger" id="expand-btn" onclick="toggleTimetableExpansion()">SEE MORE ▾</div>
+        <!-- Card Actions with Formatted Countdown -->
+        <div class="card-actions">
+          <div class="countdown-group">
+            <div class="countdown-title caps">DEPARTING IN</div>
+            <div class="countdown-val mono" id="countdown">--:--</div>
+          </div>
+          <button class="btn" id="action-btn" onclick="forceTransitToggle()">BOARD</button>
         </div>
-        <div class="list-container text-mono" id="timetable-list"></div>
-        <div class="expandable-content text-mono" id="expanded-timetable"></div>
-      </section>
-    </div>
-
-    <footer class="footer text-muted text-caps">
-      <span id="api-status">Live Weather Intercepts</span>
-      <div style="display: flex; gap: 16px; align-items: center;">
-        <a href="https://www.sunferry.com.hk/en/route-and-fare" target="_blank" rel="noopener noreferrer" class="footer-link">SUN FERRY INFO ↗</a>
       </div>
-    </footer>
+
+      <!-- Timetable Section Outside -->
+      <div id="timetable-section" style="display: none;">
+        <div class="section-title caps">Timetable</div>
+        <div class="timetable-container">
+          <div id="timetable-list"></div>
+          <div class="expandable-area" id="expanded-timetable"></div>
+          <button class="expand-btn" id="expand-btn" onclick="toggleTimetableExpansion()">EXPAND ROSTER ▾</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Links -->
+    <div class="action-links caps">
+      <a href="https://www.hko.gov.hk/en/index.html" target="_blank" class="action-pill">
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+        </svg>
+        HKO
+      </a>
+      <a href="https://www.sunferry.com.hk/en/route-and-fare" target="_blank" class="action-pill">
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+          <line x1="4" y1="22" x2="4" y2="15"></line>
+        </svg>
+        Sun Ferry
+      </a>
+    </div>
+
   </div>
 
   <script>
@@ -216,29 +340,26 @@
 
     const TIMETABLES = {
       "muiwo-central": {
-        title: "Mui Wo → Central", origin: "Mui Wo Pier", dest: "Central Pier 6",
         weekday: ["03:40","05:55","06:20","06:50","07:15","07:40","08:10","08:40","09:10","09:40","10:10","10:40","11:10","11:40","12:10","12:40","13:10","13:40","14:10","14:40","15:10","15:40","16:10","16:40","17:10","17:40","18:10","18:40","19:10","19:40","20:10","20:40","21:10","21:40","22:10","22:40","23:10","23:40"],
         sunday: ["03:40","06:20","07:05","08:00","08:40","09:20","10:00","10:40","11:20","12:00","12:40","13:20","14:00","14:40","15:20","16:00","16:40","17:20","18:00","18:40","19:20","20:00","20:40","21:20","22:00","22:40","23:20"]
       },
       "central-muiwo": {
-        title: "Central → Mui Wo", origin: "Central Pier 6", dest: "Mui Wo Pier",
         weekday: ["03:00","07:00","07:40","08:30","09:00","09:50","10:30","11:30","12:30","13:30","14:30","15:20","16:00","16:40","17:20","18:00","18:40","19:30","20:10","21:00","21:50","22:40","23:30","00:30"],
         sunday: ["03:00","07:00","07:40","08:20","09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00","21:40","22:20","23:00","23:40","00:30"]
       }
     };
     
-    const FARES = { weekday: "HK$33.50", sunday: "HK$48.50" };
+    const FARES = { weekday: "33.50", sunday: "48.50" };
     const JOURNEY_DURATION_MINS = 35;
 
     let currentRouteKey = "muiwo-central"; 
     let isManualOverride = false;
     let isExpanded = false;
-    let dynamicHolidays = new Set(["2026-01-01", "2026-12-25"]);
+    let dynamicHolidays = new Set(["2026-01-01", "2026-09-06", "2026-12-25"]);
     let weatherSuspended = false; let weatherReason = "";
+    
     let userIsInTransit = false;
-    let currentGpsProgress = 0;
-    let lastLat = null;
-    let lastLon = null;
+    let manualTransitForce = false;
     let lockedActiveTrip = null;
 
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
@@ -252,7 +373,7 @@
         const isBlackRain = warnings.some(k => k.startsWith("WTB"));
         
         if (isTyphoon) { weatherSuspended = true; weatherReason = "T8+ SIGNAL ACTIVE"; } 
-        else if (isBlackRain) { weatherSuspended = true; weatherReason = "BLACK RAINSTORM"; } 
+        else if (isBlackRain) { weatherSuspended = true; weatherReason = "BLACK RAIN"; } 
         else { weatherSuspended = false; }
         updateUI(); 
       } catch(e) {}
@@ -264,86 +385,79 @@
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    function calculateGpsProgress(lat, lon, routeKey) {
-      const org = routeKey === "muiwo-central" ? COORDS.muiwo : COORDS.central;
-      const dst = routeKey === "muiwo-central" ? COORDS.central : COORDS.muiwo;
-
-      const totalDist = getDistanceFromLatLonInKm(org.lat, org.lon, dst.lat, dst.lon);
-      const coveredDist = getDistanceFromLatLonInKm(org.lat, org.lon, lat, lon);
-
-      let pct = (coveredDist / totalDist) * 100;
-      return Math.max(0, Math.min(pct, 100));
-    }
-
     function initLocation() {
-      const icon = document.getElementById("gps-icon");
+      const light = document.getElementById("gps-light");
       if ("geolocation" in navigator) {
-        icon.classList.add("locating");
         navigator.geolocation.watchPosition((pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          lastLat = lat;
-          lastLon = lon;
-          
+          light.classList.add("active");
+          const lat = pos.coords.latitude; const lon = pos.coords.longitude;
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          if (distToCentral > 0.4 && distToMuiWo > 0.4 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
-            userIsInTransit = true;
-            currentGpsProgress = calculateGpsProgress(lat, lon, currentRouteKey);
-          } else {
-            if (distToCentral < 0.3 || distToMuiWo < 0.3) {
+          if (!manualTransitForce) {
+            if (distToCentral > 0.20 && distToMuiWo > 0.20 && lat >= 22.230 && lat <= 22.310 && lon >= 113.970 && lon <= 114.180) {
+              userIsInTransit = true;
+            } else if (distToCentral < 0.20 || distToMuiWo < 0.20) {
               userIsInTransit = false;
               lockedActiveTrip = null;
             }
-            if (!isManualOverride && !userIsInTransit) {
-              currentRouteKey = (distToCentral < distToMuiWo) ? "central-muiwo" : "muiwo-central";
-            }
           }
 
-          icon.classList.remove("locating");
-          document.getElementById("location-status").textContent = userIsInTransit ? "IN TRANSIT (GPS)" : "GPS LOCKED";
+          if (!isManualOverride && !userIsInTransit && !manualTransitForce) {
+            if (distToCentral < distToMuiWo && currentRouteKey !== "central-muiwo") {
+              setRoute("central-muiwo", false);
+            } else if (distToCentral >= distToMuiWo && currentRouteKey !== "muiwo-central") {
+              setRoute("muiwo-central", false);
+            }
+          }
+          document.getElementById("location-status").textContent = userIsInTransit ? "LIVE TRACKING" : "GPS LOCKED";
           updateUI();
-        }, () => {
-          icon.classList.remove("locating");
-          document.getElementById("location-status").textContent = "GPS OFF";
-        }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 });
+        }, () => { 
+          light.classList.remove("active"); 
+          document.getElementById("location-status").textContent = "TELEMETRY OFFLINE";
+        }, 
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 });
       }
     }
 
-    function triggerFlipToggle() {
-      const card = document.getElementById("card-layer"); const list = document.getElementById("list-layer");
-      card.classList.remove("flip-in"); list.classList.remove("flip-in");
-      card.classList.add("flip-out"); setTimeout(() => list.classList.add("flip-out"), 50); 
+    function forceTransitToggle() {
+      manualTransitForce = !manualTransitForce;
+      userIsInTransit = manualTransitForce;
+      if (!userIsInTransit) lockedActiveTrip = null;
+      document.getElementById("location-status").textContent = userIsInTransit ? "MANUAL OVERRIDE" : "GPS LOCKED";
+      updateUI();
+    }
+
+    function setRoute(routeKey, isManual = true) {
+      if (currentRouteKey === routeKey) return;
+      if (isManual) isManualOverride = true;
+      
+      document.getElementById("tab-muiwo").classList.remove("active");
+      document.getElementById("tab-central").classList.remove("active");
+      
+      if (routeKey === "muiwo-central") {
+        document.getElementById("tab-muiwo").classList.add("active");
+      } else {
+        document.getElementById("tab-central").classList.add("active");
+      }
+      
+      currentRouteKey = routeKey;
+      
+      const layer = document.getElementById("data-layer");
+      layer.classList.remove("flip-in"); layer.classList.add("flip-out");
       setTimeout(() => {
-        isManualOverride = true; currentRouteKey = (currentRouteKey === "muiwo-central") ? "central-muiwo" : "muiwo-central";
-        document.getElementById("location-status").textContent = "MANUAL";
-        document.getElementById("gps-icon").classList.remove("locating"); 
-        if (userIsInTransit && lastLat !== null && lastLon !== null) {
-          currentGpsProgress = calculateGpsProgress(lastLat, lastLon, currentRouteKey);
-        }
         updateUI(); 
-        card.classList.remove("flip-out"); list.classList.remove("flip-out");
-        card.classList.add("flip-in"); setTimeout(() => list.classList.add("flip-in"), 50);
-      }, 250); 
+        layer.classList.remove("flip-out"); layer.classList.add("flip-in");
+      }, 200);
     }
 
     function toggleTimetableExpansion() {
       isExpanded = !isExpanded;
-      const content = document.getElementById("expanded-timetable");
-      const btn = document.getElementById("expand-btn");
-      if (isExpanded) {
-        content.classList.add("open");
-        btn.textContent = "LESS ▴";
-      } else {
-        content.classList.remove("open");
-        btn.textContent = "SEE MORE ▾";
-      }
+      updateUI();
     }
 
     function pad(num) { return num.toString().padStart(2, "0"); }
     function parseTimeToMinutes(str) { const [h, m] = str.split(":").map(Number); return h * 60 + m; }
-    function formatTimeHMS(date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`; }
     
     function calculateArrivalTime(timeStr, durationMins) {
       const [h, m] = timeStr.split(":").map(Number);
@@ -354,108 +468,127 @@
     function getScheduleForDay(date) {
       const day = date.getDay();
       const dateFormatted = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-      if (day === 0 || dynamicHolidays.has(dateFormatted)) return { key: "sunday", label: "Sunday/PH" };
-      return { key: "weekday", label: "Weekday" };
+      if (day === 0 || dynamicHolidays.has(dateFormatted)) return { key: "sunday", label: "SUN/PH" };
+      return { key: "weekday", label: "WKDAY" };
+    }
+
+    function formatCountdown(diffSecs) {
+      if (diffSecs <= 0) return "00:00";
+      const totalMins = Math.floor(diffSecs / 60);
+      const secs = diffSecs % 60;
+      const hours = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      
+      if (hours > 0) {
+        return `${hours}h ${pad(mins)}m`;
+      } else {
+        return `${pad(mins)}:${pad(secs)}`;
+      }
     }
 
     function buildTimetableList(wrappedTimes, nextMinutes, nowSecsTotal) {
       const container = document.getElementById("timetable-list");
-      const expandedContainer = document.getElementById("expanded-timetable");
       container.innerHTML = "";
-      expandedContainer.innerHTML = "";
 
       const upcoming = wrappedTimes.filter((t) => t.mins > nextMinutes);
-      const top3 = upcoming.slice(0, 3);
-      const rest = upcoming.slice(3);
+      const visibleTimes = isExpanded ? upcoming : upcoming.slice(0, 3);
 
-      top3.forEach((t, index) => {
-        const row = document.createElement("div"); row.className = `list-row ${index === 0 ? "is-soon" : ""}`;
+      visibleTimes.forEach((t) => {
+        const row = document.createElement("div"); row.className = "list-row";
         const diffSecs = (t.mins * 60) - nowSecsTotal; const diffMins = Math.floor(diffSecs / 60);
-        let subCountStr = "SOON";
+        let subCountStr = "NOW";
         if (diffMins > 0) {
           let h = Math.floor(diffMins / 60); let m = diffMins % 60;
-          subCountStr = h > 0 ? `${h}H ${m}M` : `${m}M`;
+          subCountStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
         }
+        
         const arrivalStr = calculateArrivalTime(t.str, JOURNEY_DURATION_MINS);
+        const tmrwIndicator = t.isTomorrow ? `<span class="tmrw-tag">TMRW</span>` : '';
+        
         row.innerHTML = `
-          <span style="font-weight: 700;">${t.str} <span style="font-size: 10px; font-weight: 400; color: var(--fg-muted);">ARR ${arrivalStr}</span></span>
-          <div style="display: flex; gap: 12px; align-items: center; font-family: 'Space Grotesk', sans-serif;">
-            <span style="font-size: 10px; color: var(--fg-muted); letter-spacing: 0.05em;">IN ${subCountStr}</span>
-            <span style="font-size: 12px; font-weight: 600; min-width: 20px; text-align: right; color: var(--fg-main);">+${index + 1}</span>
-          </div>`;
+          <div class="row-left">
+            <span class="row-time mono">${t.str}</span>
+            <span class="row-arr caps">ARR <span class="mono">${arrivalStr}</span>${tmrwIndicator}</span>
+          </div>
+          <div class="row-in mono">${subCountStr}</div>`;
         container.appendChild(row);
       });
 
-      rest.forEach((t, index) => {
-        const row = document.createElement("div"); row.className = "list-row";
-        const diffSecs = (t.mins * 60) - nowSecsTotal; const diffMins = Math.floor(diffSecs / 60);
-        let subCountStr = "SOON";
-        if (diffMins > 0) {
-          let h = Math.floor(diffMins / 60); let m = diffMins % 60;
-          subCountStr = h > 0 ? `${h}H ${m}M` : `${m}M`;
-        }
-        const arrivalStr = calculateArrivalTime(t.str, JOURNEY_DURATION_MINS);
-        row.innerHTML = `
-          <span style="font-weight: 700;">${t.str} <span style="font-size: 10px; font-weight: 400; color: var(--fg-muted);">ARR ${arrivalStr}</span></span>
-          <div style="display: flex; gap: 12px; align-items: center; font-family: 'Space Grotesk', sans-serif;">
-            <span style="font-size: 10px; color: var(--fg-muted); letter-spacing: 0.05em;">IN ${subCountStr}</span>
-            <span style="font-size: 12px; font-weight: 600; min-width: 20px; text-align: right; color: var(--fg-muted);">+${index + 4}</span>
-          </div>`;
-        expandedContainer.appendChild(row);
-      });
-
+      const section = document.getElementById("timetable-section");
       const btn = document.getElementById("expand-btn");
-      if (rest.length === 0) {
-        btn.style.display = "none";
+      if (upcoming.length === 0) {
+        section.style.display = "none";
       } else {
-        btn.style.display = "block";
+        section.style.display = "block";
+        if (upcoming.length <= 3) {
+          btn.style.display = "none";
+        } else {
+          btn.style.display = "block";
+          btn.textContent = isExpanded ? "COLLAPSE ROSTER ▴" : "EXPAND ROSTER ▾";
+        }
       }
     }
 
     function updateUI() {
+      const body = document.getElementById("app-body");
       const now = new Date();
-      const nowMins = now.getHours() * 60 + now.getMinutes(); const nowSecsTotal = (nowMins * 60) + now.getSeconds();
-      const routeData = TIMETABLES[currentRouteKey]; const scheduleInfo = getScheduleForDay(now);
-      const times = routeData[scheduleInfo.key];
+      const nowMins = now.getHours() * 60 + now.getMinutes(); 
+      const nowSecsTotal = (nowMins * 60) + now.getSeconds();
+      const routeData = TIMETABLES[currentRouteKey]; 
+      
+      const scheduleInfoToday = getScheduleForDay(now);
+      const timesToday = routeData[scheduleInfoToday.key];
 
-      document.getElementById("main-route-title").textContent = routeData.title;
-      document.getElementById("origin-chip").textContent = routeData.origin;
-      document.getElementById("dest-chip").textContent = routeData.dest;
-      document.getElementById("mode-chip").textContent = scheduleInfo.label;
-      document.getElementById("fare-chip").textContent = `FARE: ${FARES[scheduleInfo.key]}`;
-      document.getElementById("now-time").textContent = formatTimeHMS(now);
-      document.getElementById("now-date").textContent = now.toLocaleDateString('en-GB', { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
+      let tomorrow = new Date(now.getTime() + 86400000);
+      let scheduleInfoTomorrow = getScheduleForDay(tomorrow);
+      let timesTomorrow = routeData[scheduleInfoTomorrow.key];
+
+      let wrappedTimes = [];
+      timesToday.forEach(t => {
+        let m = parseTimeToMinutes(t);
+        if (m < 180 && nowMins > 1200) m += 1440; 
+        wrappedTimes.push({ str: t, mins: m, isTomorrow: false });
+      });
+      timesTomorrow.forEach(t => {
+        let m = parseTimeToMinutes(t);
+        if (m < 180) m += 1440; 
+        wrappedTimes.push({ str: t, mins: m + 1440, isTomorrow: true });
+      });
+      wrappedTimes.sort((a, b) => a.mins - b.mins);
+
+      document.getElementById("mode-chip").textContent = scheduleInfoToday.label;
+      document.getElementById("fare-chip").textContent = `HK$${FARES[scheduleInfoToday.key]}`;
+      
+      let dateOptions = { weekday: "short", day: "numeric", month: "short" };
+      document.getElementById("now-date").textContent = now.toLocaleDateString('en-GB', dateOptions);
+      document.getElementById("now-time").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
       const timeEl = document.getElementById("next-time");
       const countdownEl = document.getElementById("countdown");
       const mainEtaEl = document.getElementById("main-eta");
       const progressBar = document.getElementById("progress-bar");
-      const mainCard = document.getElementById("main-card");
-      const cardStatusLabel = document.getElementById("card-status-label");
+      
+      const actionBtn = document.getElementById("action-btn");
+      const cardLabel = document.getElementById("card-status-label");
 
       if (weatherSuspended) {
-        timeEl.textContent = "SUSPENDED"; timeEl.classList.add("suspended");
-        countdownEl.textContent = weatherReason; countdownEl.style.color = "var(--accent-red)";
-        mainEtaEl.textContent = "ETA --:--";
+        body.className = "state-error";
+        actionBtn.style.display = "none";
+        timeEl.textContent = "HALT"; timeEl.classList.add("suspended");
+        countdownEl.textContent = weatherReason;
+        mainEtaEl.textContent = "--:--";
         progressBar.style.width = "100%"; 
-        document.getElementById("timetable-list").innerHTML = `
-          <div class="list-row" style="justify-content: center;">
-            <span style="color: var(--accent-red); font-weight: 600; font-size: 12px; letter-spacing: 0.1em;">ALL SERVICES HALTED BY HKO</span>
-          </div>`;
+        document.getElementById("timetable-section").style.display = "none";
         return;
       } else {
         timeEl.classList.remove("suspended");
+        actionBtn.style.display = "block";
       }
 
-      let wrappedTimes = times.map(t => {
-        let m = parseTimeToMinutes(t);
-        if (m < 180 && nowMins > 1200) m += 1440; 
-        return { str: t, mins: m };
-      }).sort((a, b) => a.mins - b.mins);
-
       if (userIsInTransit) {
-        mainCard.classList.add("in-transit");
-        cardStatusLabel.textContent = "GPS LIVE VOYAGE TRACKER";
+        body.className = "state-transit";
+        cardLabel.textContent = "VOYAGE ACTIVE";
+        actionBtn.textContent = "END";
         
         if (!lockedActiveTrip) {
           let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
@@ -464,57 +597,54 @@
         
         timeEl.textContent = lockedActiveTrip.str;
         const arrivalStr = calculateArrivalTime(lockedActiveTrip.str, JOURNEY_DURATION_MINS);
-        mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
+        mainEtaEl.textContent = arrivalStr;
 
-        let remainingMins = Math.max(0, Math.ceil(JOURNEY_DURATION_MINS * (1 - (currentGpsProgress / 100))));
+        let tripElapsedSecs = nowSecsTotal - (lockedActiveTrip.mins * 60);
+        let timePct = Math.max(0, Math.min((tripElapsedSecs / (JOURNEY_DURATION_MINS * 60)) * 100, 100));
+        let remainingSecs = Math.max(0, (JOURNEY_DURATION_MINS * 60) - tripElapsedSecs);
 
-        progressBar.style.width = `${currentGpsProgress}%`;
-        countdownEl.style.color = "var(--accent-red)";
-        countdownEl.textContent = remainingMins === 0 ? "ARRIVING NOW" : `${remainingMins}M REMAINING`;
+        progressBar.style.width = `${timePct}%`;
+        countdownEl.textContent = remainingSecs === 0 ? "DOCKING" : formatCountdown(remainingSecs);
         
         buildTimetableList(wrappedTimes, lockedActiveTrip.mins, nowSecsTotal);
         return;
       } else {
-        mainCard.classList.remove("in-transit");
-        cardStatusLabel.textContent = "Departure Time";
+        body.className = "state-standby";
+        cardLabel.textContent = "NEXT DEPARTURE";
+        actionBtn.textContent = "BOARD";
       }
 
       let nextTimeObj = wrappedTimes.find(t => t.mins >= nowMins);
-      if (!nextTimeObj && wrappedTimes.length > 0) { nextTimeObj = { str: wrappedTimes[0].str, mins: wrappedTimes[0].mins + 1440 }; }
+      if (!nextTimeObj && wrappedTimes.length > 0) { nextTimeObj = wrappedTimes[0]; }
 
       if (nextTimeObj) {
         timeEl.textContent = nextTimeObj.str;
         const arrivalStr = calculateArrivalTime(nextTimeObj.str, JOURNEY_DURATION_MINS);
-        mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
+        mainEtaEl.textContent = arrivalStr;
 
         const diffSecs = (nextTimeObj.mins * 60) - nowSecsTotal;
-        const diffMins = Math.floor(diffSecs / 60);
         
         let elapsedSecs = 3600 - diffSecs;
         let pct = Math.max(0, Math.min((elapsedSecs / 3600) * 100, 100)); 
         progressBar.style.width = `${pct}%`;
 
-        if (diffSecs <= 900) {
-          countdownEl.style.color = "var(--accent-red)";
-        } else {
-          countdownEl.style.color = "var(--accent-white)";
-        }
-
-        if (diffSecs <= 0) {
-          countdownEl.textContent = "BOARD NOW";
-        } else {
-          let desc = [];
-          if (Math.floor(diffMins / 60) > 0) desc.push(`${Math.floor(diffMins / 60)}H`);
-          if (diffMins % 60 > 0 || Math.floor(diffMins / 60) === 0) desc.push(`${diffMins % 60}M`);
-          countdownEl.textContent = `${desc.join(" ")} REMAINING`;
-        }
+        countdownEl.textContent = formatCountdown(diffSecs);
       }
       buildTimetableList(wrappedTimes, nextTimeObj ? nextTimeObj.mins : Infinity, nowSecsTotal);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    // Gracefully fade out the startup loader when ready
+    window.addEventListener('load', () => {
       checkWeather(); initLocation(); updateUI(); 
-      setInterval(updateUI, 1000); setInterval(checkWeather, 60000 * 5); 
+      setInterval(updateUI, 1000); setInterval(checkWeather, 60000 * 5);
+      
+      setTimeout(() => {
+        const loader = document.getElementById('app-loader');
+        if (loader) {
+          loader.style.opacity = '0';
+          setTimeout(() => loader.remove(), 400);
+        }
+      }, 350);
     });
   </script>
 </body>
