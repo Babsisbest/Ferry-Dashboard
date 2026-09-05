@@ -12,7 +12,6 @@
   <meta name="theme-color" content="#F5F5F5" media="(prefers-color-scheme: light)">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <!-- Forces dark status bar styling on iOS PWA -->
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -394,17 +393,8 @@
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          if (!manualTransitForce) {
-            // FIX: Increased the exclusion distance from 0.20km (200m) to 1.0km 
-            // so local GPS drift near the pier/home doesn't trigger false voyage states.
-            if (distToCentral > 1.0 && distToMuiWo > 1.0 && lat >= 22.230 && lat <= 22.310 && lon >= 113.970 && lon <= 114.180) {
-              userIsInTransit = true;
-            } else if (distToCentral < 0.50 || distToMuiWo < 0.50) {
-              userIsInTransit = false;
-              lockedActiveTrip = null;
-            }
-          }
-
+          // Auto-switch route direction based on proximity to piers, 
+          // while auto-boarding is now strictly controlled by the BOARD button.
           if (!isManualOverride && !userIsInTransit && !manualTransitForce) {
             if (distToCentral < distToMuiWo && currentRouteKey !== "central-muiwo") {
               setRoute("central-muiwo", false);
@@ -412,7 +402,7 @@
               setRoute("muiwo-central", false);
             }
           }
-          document.getElementById("location-status").textContent = userIsInTransit ? "LIVE TRACKING" : "GPS LOCKED";
+          document.getElementById("location-status").textContent = "GPS LOCKED";
           updateUI();
         }, () => { 
           light.classList.remove("active"); 
@@ -606,7 +596,7 @@
         let remainingSecs = Math.max(0, (JOURNEY_DURATION_MINS * 60) - tripElapsedSecs);
 
         progressBar.style.width = `${timePct}%`;
-        countdownEl.textContent = remainingSecs === 0 ? "DOCKING" : formatCountdown(remainingSecs);
+        countdownEl.textContent = remainingSecs === 0 ? "BOARDING" : formatCountdown(remainingSecs);
         
         buildTimetableList(wrappedTimes, lockedActiveTrip.mins, nowSecsTotal);
         return;
