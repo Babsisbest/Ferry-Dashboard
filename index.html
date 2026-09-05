@@ -87,7 +87,10 @@
       border-radius: var(--radius-xl); padding: 24px;
       backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
       box-shadow: 0 24px 48px var(--shadow-heavy);
+      transition: border-color 0.3s;
     }
+    .card.in-transit { border-color: var(--accent-red); }
+
     .card-header { font-size: 10px; margin-bottom: 16px; display: flex; justify-content: space-between;}
     .card-body { display: flex; justify-content: space-between; align-items: flex-end; }
     .main-time { font-size: 56px; font-weight: 700; line-height: 0.8; letter-spacing: -0.04em; margin-bottom: -2px; transition: font-size 0.3s, color 0.3s; }
@@ -156,9 +159,9 @@
     </header>
 
     <div class="anim-layer" id="card-layer">
-      <section class="card">
+      <section class="card" id="main-card">
         <div class="card-header text-caps text-muted">
-          <span>Departure Time</span>
+          <span id="card-status-label">Departure Time</span>
           <span id="mode-chip" style="color: var(--fg-main);">Loading...</span>
         </div>
         
@@ -217,13 +220,15 @@
     };
     
     const FARES = { weekday: "HK$33.50", sunday: "HK$48.50" };
-    const JOURNEY_DURATION_MINS = 35; // 35m crossing duration
+    const JOURNEY_DURATION_MINS = 35;
 
     let currentRouteKey = "muiwo-central"; 
     let isManualOverride = false;
     let isExpanded = false;
     let dynamicHolidays = new Set(["2026-01-01", "2026-12-25"]);
     let weatherSuspended = false; let weatherReason = "";
+    let userIsInTransit = false;
+    let activeFerryDeparture = null;
 
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
 
@@ -252,18 +257,30 @@
       const icon = document.getElementById("gps-icon");
       if ("geolocation" in navigator) {
         icon.classList.add("locating");
-        navigator.geolocation.getCurrentPosition((pos) => {
-          if (isManualOverride) return;
-          const distToCentral = getDistanceFromLatLonInKm(pos.coords.latitude, pos.coords.longitude, COORDS.central.lat, COORDS.central.lon);
-          const distToMuiWo = getDistanceFromLatLonInKm(pos.coords.latitude, pos.coords.longitude, COORDS.muiwo.lat, COORDS.muiwo.lon);
-          currentRouteKey = (distToCentral < distToMuiWo) ? "central-muiwo" : "muiwo-central";
+        navigator.geolocation.watchPosition((pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          
+          const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
+          const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
+
+          // Geofence check: If user is far from both piers (> 0.6 km) but within the general HK-Lantau corridor bounding box
+          if (distToCentral > 0.6 && distToMuiWo > 0.6 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
+            userIsInTransit = true;
+          } else {
+            userIsInTransit = false;
+            if (!isManualOverride) {
+              currentRouteKey = (distToCentral < distToMuiWo) ? "central-muiwo" : "muiwo-central";
+            }
+          }
+
           icon.classList.remove("locating");
-          document.getElementById("location-status").textContent = "GPS LOCKED";
+          document.getElementById("location-status").textContent = userIsInTransit ? "IN TRANSIT (GPS)" : "GPS LOCKED";
           updateUI();
         }, () => {
           icon.classList.remove("locating");
           document.getElementById("location-status").textContent = "GPS OFF";
-        }, { maximumAge: 60000, timeout: 5000 });
+        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
       }
     }
 
@@ -297,7 +314,6 @@
     function parseTimeToMinutes(str) { const [h, m] = str.split(":").map(Number); return h * 60 + m; }
     function formatTimeHMS(date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`; }
     
-    // Helper to calculate arrival time string given departure string and duration
     function calculateArrivalTime(timeStr, durationMins) {
       const [h, m] = timeStr.split(":").map(Number);
       let totalMins = (h * 60 + m + durationMins) % 1440;
@@ -383,6 +399,8 @@
       const countdownEl = document.getElementById("countdown");
       const mainEtaEl = document.getElementById("main-eta");
       const progressBar = document.getElementById("progress-bar");
+      const mainCard = document.getElementById("main-card");
+      const cardStatusLabel = document.getElementById("card-status-label");
 
       if (weatherSuspended) {
         timeEl.textContent = "SUSPENDED"; timeEl.classList.add("suspended");
@@ -403,6 +421,34 @@
         if (m < 180 && nowMins > 1200) m += 1440; 
         return { str: t, mins: m };
       }).sort((a, b) => a.mins - b.mins);
+
+      // IN-TRANSIT MODE OVERRIDE
+      if (userIsInTransit) {
+        mainCard.classList.add("in-transit");
+        cardStatusLabel.textContent = "IN-TRANSIT PROGRESS";
+        
+        // Find the most recent ferry that departed
+        let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
+        let activeTrip = departedTimes.length > 0 ? departedTimes[departedTimes.length - 1] : wrappedTimes[wrappedTimes.length - 1];
+        
+        timeEl.textContent = activeTrip.str;
+        const arrivalStr = calculateArrivalTime(activeTrip.str, JOURNEY_DURATION_MINS);
+        mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
+
+        // Calculate crossing progress over 35 minutes (2100 seconds)
+        let tripElapsedSecs = nowSecsTotal - (activeTrip.mins * 60);
+        let crossingPct = Math.max(0, Math.min((tripElapsedSecs / (JOURNEY_DURATION_MINS * 60)) * 100, 100));
+        
+        progressBar.style.width = `${crossingPct}%`;
+        countdownEl.style.color = "var(--accent-red)";
+        countdownEl.textContent = `CROSSING (${Math.floor(crossingPct)}%)`;
+        
+        buildTimetableList(wrappedTimes, activeTrip.mins, nowSecsTotal);
+        return;
+      } else {
+        mainCard.classList.remove("in-transit");
+        cardStatusLabel.textContent = "Departure Time";
+      }
 
       let nextTimeObj = wrappedTimes.find(t => t.mins >= nowMins);
       if (!nextTimeObj && wrappedTimes.length > 0) { nextTimeObj = { str: wrappedTimes[0].str, mins: wrappedTimes[0].mins + 1440 }; }
