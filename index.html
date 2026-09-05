@@ -231,6 +231,7 @@
     let currentGpsProgress = 0;
     let lastLat = null;
     let lastLon = null;
+    let lockedActiveTrip = null; // Locks onto the exact ferry trip you boarded
 
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
 
@@ -279,12 +280,17 @@
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          if (distToCentral > 0.6 && distToMuiWo > 0.6 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
+          // If in open harbor corridor
+          if (distToCentral > 0.4 && distToMuiWo > 0.4 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
             userIsInTransit = true;
             currentGpsProgress = calculateGpsProgress(lat, lon, currentRouteKey);
           } else {
-            userIsInTransit = false;
-            if (!isManualOverride) {
+            // Only drop out of transit if we are actually close to a pier (< 0.3 km)
+            if (distToCentral < 0.3 || distToMuiWo < 0.3) {
+              userIsInTransit = false;
+              lockedActiveTrip = null; // Reset trip lock when back at a pier
+            }
+            if (!isManualOverride && !userIsInTransit) {
               currentRouteKey = (distToCentral < distToMuiWo) ? "central-muiwo" : "muiwo-central";
             }
           }
@@ -441,26 +447,28 @@
         return { str: t, mins: m };
       }).sort((a, b) => a.mins - b.mins);
 
-      // TRUE GPS IN-TRANSIT OVERRIDE WITH MINUTES REMAINING
+      // LOCKED IN-TRANSIT VOYAGE TRACKER
       if (userIsInTransit) {
         mainCard.classList.add("in-transit");
         cardStatusLabel.textContent = "GPS LIVE VOYAGE TRACKER";
         
-        let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
-        let activeTrip = departedTimes.length > 0 ? departedTimes[departedTimes.length - 1] : wrappedTimes[wrappedTimes.length - 1];
+        // Lock onto the exact trip you boarded the first time in-transit is triggered
+        if (!lockedActiveTrip) {
+          let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
+          lockedActiveTrip = departedTimes.length > 0 ? departedTimes[departedTimes.length - 1] : wrappedTimes[wrappedTimes.length - 1];
+        }
         
-        timeEl.textContent = activeTrip.str;
-        const arrivalStr = calculateArrivalTime(activeTrip.str, JOURNEY_DURATION_MINS);
+        timeEl.textContent = lockedActiveTrip.str;
+        const arrivalStr = calculateArrivalTime(lockedActiveTrip.str, JOURNEY_DURATION_MINS);
         mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
 
-        // Calculate remaining minutes based on GPS progress percentage
         let remainingMins = Math.max(0, Math.ceil(JOURNEY_DURATION_MINS * (1 - (currentGpsProgress / 100))));
 
         progressBar.style.width = `${currentGpsProgress}%`;
         countdownEl.style.color = "var(--accent-red)";
         countdownEl.textContent = remainingMins === 0 ? "ARRIVING NOW" : `${remainingMins}M REMAINING`;
         
-        buildTimetableList(wrappedTimes, activeTrip.mins, nowSecsTotal);
+        buildTimetableList(wrappedTimes, lockedActiveTrip.mins, nowSecsTotal);
         return;
       } else {
         mainCard.classList.remove("in-transit");
