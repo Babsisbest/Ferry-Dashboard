@@ -228,7 +228,9 @@
     let dynamicHolidays = new Set(["2026-01-01", "2026-12-25"]);
     let weatherSuspended = false; let weatherReason = "";
     let userIsInTransit = false;
-    let activeFerryDeparture = null;
+    let currentGpsProgress = 0;
+    let lastLat = null;
+    let lastLon = null;
 
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
 
@@ -253,6 +255,18 @@
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
+    // Calculate exact GPS progress percentage along the current route line
+    function calculateGpsProgress(lat, lon, routeKey) {
+      const org = routeKey === "muiwo-central" ? COORDS.muiwo : COORDS.central;
+      const dst = routeKey === "muiwo-central" ? COORDS.central : COORDS.muiwo;
+
+      const totalDist = getDistanceFromLatLonInKm(org.lat, org.lon, dst.lat, dst.lon);
+      const coveredDist = getDistanceFromLatLonInKm(org.lat, org.lon, lat, lon);
+
+      let pct = (coveredDist / totalDist) * 100;
+      return Math.max(0, Math.min(pct, 100));
+    }
+
     function initLocation() {
       const icon = document.getElementById("gps-icon");
       if ("geolocation" in navigator) {
@@ -260,13 +274,16 @@
         navigator.geolocation.watchPosition((pos) => {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
+          lastLat = lat;
+          lastLon = lon;
           
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          // Geofence check: If user is far from both piers (> 0.6 km) but within the general HK-Lantau corridor bounding box
+          // Geofence check: If user is far from both piers (> 0.6 km) but within the harbor bounding box
           if (distToCentral > 0.6 && distToMuiWo > 0.6 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
             userIsInTransit = true;
+            currentGpsProgress = calculateGpsProgress(lat, lon, currentRouteKey);
           } else {
             userIsInTransit = false;
             if (!isManualOverride) {
@@ -280,7 +297,7 @@
         }, () => {
           icon.classList.remove("locating");
           document.getElementById("location-status").textContent = "GPS OFF";
-        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
+        }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 });
       }
     }
 
@@ -291,7 +308,11 @@
       setTimeout(() => {
         isManualOverride = true; currentRouteKey = (currentRouteKey === "muiwo-central") ? "central-muiwo" : "muiwo-central";
         document.getElementById("location-status").textContent = "MANUAL";
-        document.getElementById("gps-icon").classList.remove("locating"); updateUI(); 
+        document.getElementById("gps-icon").classList.remove("locating"); 
+        if (userIsInTransit && lastLat !== null && lastLon !== null) {
+          currentGpsProgress = calculateGpsProgress(lastLat, lastLon, currentRouteKey);
+        }
+        updateUI(); 
         card.classList.remove("flip-out"); list.classList.remove("flip-out");
         card.classList.add("flip-in"); setTimeout(() => list.classList.add("flip-in"), 50);
       }, 250); 
@@ -422,12 +443,11 @@
         return { str: t, mins: m };
       }).sort((a, b) => a.mins - b.mins);
 
-      // IN-TRANSIT MODE OVERRIDE
+      // TRUE GPS IN-TRANSIT OVERRIDE
       if (userIsInTransit) {
         mainCard.classList.add("in-transit");
-        cardStatusLabel.textContent = "IN-TRANSIT PROGRESS";
+        cardStatusLabel.textContent = "GPS LIVE VOYAGE TRACKER";
         
-        // Find the most recent ferry that departed
         let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
         let activeTrip = departedTimes.length > 0 ? departedTimes[departedTimes.length - 1] : wrappedTimes[wrappedTimes.length - 1];
         
@@ -435,13 +455,10 @@
         const arrivalStr = calculateArrivalTime(activeTrip.str, JOURNEY_DURATION_MINS);
         mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
 
-        // Calculate crossing progress over 35 minutes (2100 seconds)
-        let tripElapsedSecs = nowSecsTotal - (activeTrip.mins * 60);
-        let crossingPct = Math.max(0, Math.min((tripElapsedSecs / (JOURNEY_DURATION_MINS * 60)) * 100, 100));
-        
-        progressBar.style.width = `${crossingPct}%`;
+        // Progress bar width is now driven directly by real-time GPS distance calculation!
+        progressBar.style.width = `${currentGpsProgress}%`;
         countdownEl.style.color = "var(--accent-red)";
-        countdownEl.textContent = `CROSSING (${Math.floor(crossingPct)}%)`;
+        countdownEl.textContent = `GPS POSITION (${Math.floor(currentGpsProgress)}%)`;
         
         buildTimetableList(wrappedTimes, activeTrip.mins, nowSecsTotal);
         return;
