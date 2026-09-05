@@ -56,7 +56,8 @@
       background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
     }
 
-    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; padding-top: 12px; z-index: 1; }
+    /* Added extra bottom padding buffer here to prevent edge clipping */
+    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; padding-top: 12px; padding-bottom: 40px; z-index: 1; }
 
     .text-mono { font-family: 'Space Mono', monospace; }
     .text-caps { text-transform: uppercase; letter-spacing: 0.12em; }
@@ -108,7 +109,6 @@
     .list-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background-color: var(--bg-solid); font-size: 14px; color: var(--fg-muted); }
     .list-row.is-soon { background-color: var(--row-soon-bg); border-color: var(--border-bright); color: var(--fg-main); }
     
-    /* ACCORDION DROPDOWN STYLING */
     .expand-trigger { 
       font-size: 10px; cursor: pointer; color: var(--fg-muted); letter-spacing: 0.12em; 
       padding: 4px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border);
@@ -122,10 +122,10 @@
       opacity: 0; margin-top: 0px;
     }
     .expandable-content.open {
-      max-height: 1000px; opacity: 1; margin-top: 6px;
+      max-height: 1200px; opacity: 1; margin-top: 6px;
     }
 
-    .footer { display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: auto; padding: 24px 4px; opacity: 0.6; }
+    .footer { display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: auto; padding: 24px 4px 8px 4px; opacity: 0.6; }
     .footer-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--fg-muted); padding-bottom: 2px; transition: color 0.2s; }
     .footer-link:active { color: var(--fg-main); }
   </style>
@@ -186,9 +186,7 @@
           <span>Subsequent Departures</span>
           <div class="expand-trigger" id="expand-btn" onclick="toggleTimetableExpansion()">SEE MORE ▾</div>
         </div>
-        <!-- Default top 3 upcoming departures -->
         <div class="list-container text-mono" id="timetable-list"></div>
-        <!-- Smooth dropdown container for the rest of the day -->
         <div class="expandable-content text-mono" id="expanded-timetable"></div>
       </section>
     </div>
@@ -314,7 +312,6 @@
       const top3 = upcoming.slice(0, 3);
       const rest = upcoming.slice(3);
 
-      // Render top 3 main departures
       top3.forEach((t, index) => {
         const row = document.createElement("div"); row.className = `list-row ${index === 0 ? "is-soon" : ""}`;
         const diffSecs = (t.mins * 60) - nowSecsTotal; const diffMins = Math.floor(diffSecs / 60);
@@ -332,7 +329,6 @@
         container.appendChild(row);
       });
 
-      // Render remaining departures in the expandable accordion container
       rest.forEach((t, index) => {
         const row = document.createElement("div"); row.className = "list-row";
         const diffSecs = (t.mins * 60) - nowSecsTotal; const diffMins = Math.floor(diffSecs / 60);
@@ -350,7 +346,6 @@
         expandedContainer.appendChild(row);
       });
 
-      // Hide toggle button if there are no more departures left to show
       const btn = document.getElementById("expand-btn");
       if (rest.length === 0) {
         btn.style.display = "none";
