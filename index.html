@@ -98,7 +98,7 @@
     .mono { font-family: 'Space Mono', monospace; }
     .caps { text-transform: uppercase; letter-spacing: 1px; }
 
-    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 28px; position: relative; padding-bottom: 40px;}
+    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 24px; position: relative; padding-bottom: 24px;}
 
     /* Route Tabs */
     .tabs-container {
@@ -228,11 +228,11 @@
     .flip-out { animation: fadeOut 0.2s ease forwards; }
     .flip-in { animation: fadeIn 0.3s ease forwards; }
 
-    /* Action Links */
+    /* Slim, Low-Profile Action Links */
     .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 4px;}
     .action-pill {
       flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
-      padding: 14px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
+      padding: 10px 16px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
       text-decoration: none; color: var(--text-muted); font-size: 11px; font-weight: 700; transition: all 0.2s;
     }
     .action-pill:active { border-color: var(--border-focus); color: var(--text-main); transform: scale(0.96); }
@@ -315,7 +315,7 @@
 
     </div>
 
-    <!-- Footer Links -->
+    <!-- Slim Footer Links -->
     <div class="action-links caps">
       <a href="https://www.hko.gov.hk/en/index.html" target="_blank" class="action-pill">
         <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -393,8 +393,6 @@
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          // Auto-switch route direction based on proximity to piers, 
-          // while auto-boarding is now strictly controlled by the BOARD button.
           if (!isManualOverride && !userIsInTransit && !manualTransitForce) {
             if (distToCentral < distToMuiWo && currentRouteKey !== "central-muiwo") {
               setRoute("central-muiwo", false);
