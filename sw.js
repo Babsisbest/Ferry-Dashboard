@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ferry-cache-v2';
+const CACHE_NAME = 'ferry-cache-v3'; // Bumped version number
 const assetsToCache = [
   './',
   './index.html',
@@ -20,7 +20,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            return caches.delete(key);
+            return caches.delete(key); // Clears out old cache versions (v1, v2)
           }
         })
       );
@@ -30,25 +30,40 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Skip weather API calls from aggressive caching so live updates always work
+  // Always bypass cache for HKO weather data to ensure live warnings
   if (event.request.url.includes('weather.gov.hk')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
+  // For HTML / Navigation requests, use a Network-First strategy
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // For other static assets, use Cache-First with background update
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).then((fetchResponse) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, fetchResponse.clone());
-          return fetchResponse;
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, networkResponse.clone());
         });
-      });
-    }).catch(() => {
-      // Fallback if offline and asset not cached
-      if (event.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
+        return networkResponse;
+      }).catch(() => {});
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
