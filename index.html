@@ -333,7 +333,10 @@
         timeEl.textContent = nextTimeObj.str;
         const diffSecs = (nextTimeObj.mins * 60) - nowSecsTotal;
         const diffMins = Math.floor(diffSecs / 60);
-        let pct = Math.max(0, Math.min((diffSecs / 3600) * 100, 100)); 
+        
+        // Inverted progress calculation: Fills up from 0% to 100% as departure nears
+        let elapsedSecs = 3600 - diffSecs;
+        let pct = Math.max(0, Math.min((elapsedSecs / 3600) * 100, 100)); 
         progressBar.style.width = `${pct}%`;
 
         if (diffSecs <= 900) {
