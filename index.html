@@ -6,14 +6,14 @@
   <title>Smart Ferry Dashboard</title>
   
   <link rel="manifest" href="manifest.json">
-  <!-- Minimalist Stark Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>">
 
   <meta name="theme-color" content="#09090B" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#F5F5F5" media="(prefers-color-scheme: light)">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <!-- Forces dark status bar styling on iOS PWA -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -395,9 +395,11 @@
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
           if (!manualTransitForce) {
-            if (distToCentral > 0.20 && distToMuiWo > 0.20 && lat >= 22.230 && lat <= 22.310 && lon >= 113.970 && lon <= 114.180) {
+            // FIX: Increased the exclusion distance from 0.20km (200m) to 1.0km 
+            // so local GPS drift near the pier/home doesn't trigger false voyage states.
+            if (distToCentral > 1.0 && distToMuiWo > 1.0 && lat >= 22.230 && lat <= 22.310 && lon >= 113.970 && lon <= 114.180) {
               userIsInTransit = true;
-            } else if (distToCentral < 0.20 || distToMuiWo < 0.20) {
+            } else if (distToCentral < 0.50 || distToMuiWo < 0.50) {
               userIsInTransit = false;
               lockedActiveTrip = null;
             }
@@ -633,7 +635,6 @@
       buildTimetableList(wrappedTimes, nextTimeObj ? nextTimeObj.mins : Infinity, nowSecsTotal);
     }
 
-    // Gracefully fade out the startup loader when ready
     window.addEventListener('load', () => {
       checkWeather(); initLocation(); updateUI(); 
       setInterval(updateUI, 1000); setInterval(checkWeather, 60000 * 5);
