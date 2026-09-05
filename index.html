@@ -255,7 +255,6 @@
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    // Calculate exact GPS progress percentage along the current route line
     function calculateGpsProgress(lat, lon, routeKey) {
       const org = routeKey === "muiwo-central" ? COORDS.muiwo : COORDS.central;
       const dst = routeKey === "muiwo-central" ? COORDS.central : COORDS.muiwo;
@@ -280,7 +279,6 @@
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          // Geofence check: If user is far from both piers (> 0.6 km) but within the harbor bounding box
           if (distToCentral > 0.6 && distToMuiWo > 0.6 && lat >= 22.250 && lat <= 22.300 && lon >= 113.980 && lon <= 114.175) {
             userIsInTransit = true;
             currentGpsProgress = calculateGpsProgress(lat, lon, currentRouteKey);
@@ -443,7 +441,7 @@
         return { str: t, mins: m };
       }).sort((a, b) => a.mins - b.mins);
 
-      // TRUE GPS IN-TRANSIT OVERRIDE
+      // TRUE GPS IN-TRANSIT OVERRIDE WITH MINUTES REMAINING
       if (userIsInTransit) {
         mainCard.classList.add("in-transit");
         cardStatusLabel.textContent = "GPS LIVE VOYAGE TRACKER";
@@ -455,10 +453,12 @@
         const arrivalStr = calculateArrivalTime(activeTrip.str, JOURNEY_DURATION_MINS);
         mainEtaEl.textContent = `ARRIVES ${arrivalStr}`;
 
-        // Progress bar width is now driven directly by real-time GPS distance calculation!
+        // Calculate remaining minutes based on GPS progress percentage
+        let remainingMins = Math.max(0, Math.ceil(JOURNEY_DURATION_MINS * (1 - (currentGpsProgress / 100))));
+
         progressBar.style.width = `${currentGpsProgress}%`;
         countdownEl.style.color = "var(--accent-red)";
-        countdownEl.textContent = `GPS POSITION (${Math.floor(currentGpsProgress)}%)`;
+        countdownEl.textContent = remainingMins === 0 ? "ARRIVING NOW" : `${remainingMins}M REMAINING`;
         
         buildTimetableList(wrappedTimes, activeTrip.mins, nowSecsTotal);
         return;
