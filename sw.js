@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ferry-cache-v3'; // Bumped version number
+const CACHE_NAME = 'ferry-cache-v4'; // Bumped to v4 to force a clean slate
 const assetsToCache = [
   './',
   './index.html',
@@ -20,7 +20,8 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            return caches.delete(key); // Clears out old cache versions (v1, v2)
+            // This deletes v1, v2, and v3 caches automatically
+            return caches.delete(key); 
           }
         })
       );
