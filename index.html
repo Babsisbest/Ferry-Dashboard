@@ -8,8 +8,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>">
 
-  <meta name="theme-color" content="#09090B" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#F5F5F5" media="(prefers-color-scheme: light)">
+  <!-- Single dynamic theme-color meta tag (controlled by JS below to fix Android nav bar) -->
+  <meta name="theme-color" id="theme-color-meta" content="#09090B">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -98,7 +98,7 @@
     .mono { font-family: 'Space Mono', monospace; }
     .caps { text-transform: uppercase; letter-spacing: 1px; }
 
-    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 24px; position: relative; padding-bottom: 24px;}
+    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 28px; position: relative; padding-bottom: 40px;}
 
     /* Route Tabs */
     .tabs-container {
@@ -138,6 +138,9 @@
       padding: 24px 24px 16px 24px;
     }
     
+    /* Dedicated Title element for active status styling */
+    #card-status-label { transition: color 0.3s ease; }
+
     .time-flex { 
       display: flex; justify-content: space-between; align-items: flex-end; 
       padding: 0 24px 24px 24px;
@@ -173,7 +176,7 @@
     }
     
     .countdown-group { display: flex; flex-direction: column; gap: 2px; }
-    .countdown-title { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+    .countdown-title { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; transition: color 0.3s ease; }
     .countdown-val { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
     
     .btn {
@@ -228,11 +231,12 @@
     .flip-out { animation: fadeOut 0.2s ease forwards; }
     .flip-in { animation: fadeIn 0.3s ease forwards; }
 
-    /* Slim, Low-Profile Action Links */
+    /* Slim, Correctly Proportioned Action Links */
     .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 4px;}
     .action-pill {
       flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
-      padding: 10px 16px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
+      padding: 10px 16px; /* FIXED: Now genuinely slimmed down */
+      border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
       text-decoration: none; color: var(--text-muted); font-size: 11px; font-weight: 700; transition: all 0.2s;
     }
     .action-pill:active { border-color: var(--border-focus); color: var(--text-main); transform: scale(0.96); }
@@ -293,7 +297,7 @@
           <div class="track-fill" id="progress-bar"></div>
         </div>
 
-        <!-- Card Actions with Formatted Countdown -->
+        <!-- Card Actions with Dynamic Title -->
         <div class="card-actions">
           <div class="countdown-group">
             <div class="countdown-title caps">DEPARTING IN</div>
@@ -315,7 +319,7 @@
 
     </div>
 
-    <!-- Slim Footer Links -->
+    <!-- Slimmer Footer Links -->
     <div class="action-links caps">
       <a href="https://www.hko.gov.hk/en/index.html" target="_blank" class="action-pill">
         <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -336,6 +340,14 @@
 
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err)); }
+
+    // Dynamic Theme Color Sync for Android Status Bar Match
+    function syncThemeColor() {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#09090B' : '#F5F5F5');
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeColor);
+    syncThemeColor();
 
     const TIMETABLES = {
       "muiwo-central": {
@@ -392,6 +404,15 @@
           const lat = pos.coords.latitude; const lon = pos.coords.longitude;
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
+
+          if (!manualTransitForce) {
+            if (distToCentral > 1.0 && distToMuiWo > 1.0 && lat >= 22.230 && lat <= 22.310 && lon >= 113.970 && lon <= 114.180) {
+              userIsInTransit = true;
+            } else if (distToCentral < 0.50 || distToMuiWo < 0.50) {
+              userIsInTransit = false;
+              lockedActiveTrip = null;
+            }
+          }
 
           if (!isManualOverride && !userIsInTransit && !manualTransitForce) {
             if (distToCentral < distToMuiWo && currentRouteKey !== "central-muiwo") {
@@ -554,6 +575,7 @@
       document.getElementById("now-time").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
       const timeEl = document.getElementById("next-time");
+      const countdownTitle = document.querySelector(".countdown-title");
       const countdownEl = document.getElementById("countdown");
       const mainEtaEl = document.getElementById("main-eta");
       const progressBar = document.getElementById("progress-bar");
@@ -565,6 +587,8 @@
         body.className = "state-error";
         actionBtn.style.display = "none";
         timeEl.textContent = "HALT"; timeEl.classList.add("suspended");
+        countdownTitle.textContent = "DEPARTING IN";
+        cardLabel.style.color = "var(--text-sec)";
         countdownEl.textContent = weatherReason;
         mainEtaEl.textContent = "--:--";
         progressBar.style.width = "100%"; 
@@ -577,8 +601,10 @@
 
       if (userIsInTransit) {
         body.className = "state-transit";
-        cardLabel.textContent = "VOYAGE ACTIVE";
+        cardLabel.textContent = "IN TRANSIT";
+        cardLabel.style.color = "var(--accent)"; // Swaps title to bold red
         actionBtn.textContent = "END";
+        countdownTitle.textContent = "ARRIVING IN";
         
         if (!lockedActiveTrip) {
           let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
@@ -601,7 +627,9 @@
       } else {
         body.className = "state-standby";
         cardLabel.textContent = "NEXT DEPARTURE";
+        cardLabel.style.color = "var(--text-sec)"; // Resets title color back to default grey
         actionBtn.textContent = "BOARD";
+        countdownTitle.textContent = "DEPARTING IN";
       }
 
       let nextTimeObj = wrappedTimes.find(t => t.mins >= nowMins);
