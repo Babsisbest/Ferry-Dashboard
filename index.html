@@ -8,8 +8,10 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>">
 
-  <!-- Single dynamic theme-color meta tag (controlled by JS below to fix Android nav bar) -->
-  <meta name="theme-color" id="theme-color-meta" content="#09090B">
+  <!-- Strictly defines the system bar colors for native OS matching -->
+  <meta name="theme-color" content="#F5F5F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#09090B" media="(prefers-color-scheme: dark)">
+  
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -61,6 +63,11 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
+    /* Locks the viewport to prevent the pull-to-refresh stretch bug */
+    html, body {
+      overscroll-behavior-y: none;
+    }
+
     html { background-color: var(--bg); transition: background-color 0.3s ease; }
 
     body {
@@ -98,7 +105,7 @@
     .mono { font-family: 'Space Mono', monospace; }
     .caps { text-transform: uppercase; letter-spacing: 1px; }
 
-    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 28px; position: relative; padding-bottom: 40px;}
+    .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 28px; position: relative; padding-bottom: 24px;}
 
     /* Route Tabs */
     .tabs-container {
@@ -138,7 +145,6 @@
       padding: 24px 24px 16px 24px;
     }
     
-    /* Dedicated Title element for active status styling */
     #card-status-label { transition: color 0.3s ease; }
 
     .time-flex { 
@@ -231,11 +237,11 @@
     .flip-out { animation: fadeOut 0.2s ease forwards; }
     .flip-in { animation: fadeIn 0.3s ease forwards; }
 
-    /* Slim, Correctly Proportioned Action Links */
+    /* Action Links (Taller Buttons) */
     .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 4px;}
     .action-pill {
       flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
-      padding: 10px 16px; /* FIXED: Now genuinely slimmed down */
+      padding: 14px 16px; /* Restored to proper tactile height */
       border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
       text-decoration: none; color: var(--text-muted); font-size: 11px; font-weight: 700; transition: all 0.2s;
     }
@@ -297,7 +303,7 @@
           <div class="track-fill" id="progress-bar"></div>
         </div>
 
-        <!-- Card Actions with Dynamic Title -->
+        <!-- Card Actions with Formatted Countdown -->
         <div class="card-actions">
           <div class="countdown-group">
             <div class="countdown-title caps">DEPARTING IN</div>
@@ -319,7 +325,7 @@
 
     </div>
 
-    <!-- Slimmer Footer Links -->
+    <!-- Footer Links -->
     <div class="action-links caps">
       <a href="https://www.hko.gov.hk/en/index.html" target="_blank" class="action-pill">
         <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -340,14 +346,6 @@
 
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err)); }
-
-    // Dynamic Theme Color Sync for Android Status Bar Match
-    function syncThemeColor() {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#09090B' : '#F5F5F5');
-    }
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeColor);
-    syncThemeColor();
 
     const TIMETABLES = {
       "muiwo-central": {
@@ -602,7 +600,7 @@
       if (userIsInTransit) {
         body.className = "state-transit";
         cardLabel.textContent = "IN TRANSIT";
-        cardLabel.style.color = "var(--accent)"; // Swaps title to bold red
+        cardLabel.style.color = "var(--accent)"; 
         actionBtn.textContent = "END";
         countdownTitle.textContent = "ARRIVING IN";
         
@@ -627,7 +625,7 @@
       } else {
         body.className = "state-standby";
         cardLabel.textContent = "NEXT DEPARTURE";
-        cardLabel.style.color = "var(--text-sec)"; // Resets title color back to default grey
+        cardLabel.style.color = "var(--text-sec)"; 
         actionBtn.textContent = "BOARD";
         countdownTitle.textContent = "DEPARTING IN";
       }
