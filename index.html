@@ -2,14 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Prevents zooming and locks the scale -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Smart Ferry Dashboard</title>
   
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>">
 
-  <!-- Controlled entirely by JS to seamlessly match the specific background hex -->
   <meta name="theme-color" id="theme-color-meta" content="#09090B">
   
   <meta name="mobile-web-app-capable" content="yes">
@@ -55,12 +53,15 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-    /* ULTIMATE VIEWPORT SCROLL LOCK (No absolute positioning required) */
+    /* ULTIMATE BROWSER WIGGLE FIX: Locks the body completely */
     html, body {
       width: 100%;
-      margin: 0; padding: 0;
-      background-color: var(--bg); 
-      overscroll-behavior-y: none; /* Stops the bounce natively */
+      height: 100%; /* Strictly restrains to the current window size */
+      margin: 0; 
+      padding: 0;
+      overflow: hidden; /* Body CANNOT scroll */
+      overscroll-behavior: none; /* Stops the OS bounce */
+      background-color: var(--bg);
     }
 
     body {
@@ -69,11 +70,21 @@
       background-image: var(--dot-grid);
       background-size: 16px 16px;
       background-position: center top;
-      display: flex;
-      justify-content: center;
-      /* Locked exactly to the browser's dynamic viewport height via JS */
-      min-height: 100vh; 
-      min-height: calc(var(--vh, 1vh) * 100);
+    }
+
+    /* SCROLL ISOLATION: The container handles its own scrolling securely */
+    .app-container { 
+      width: 100%; 
+      max-width: 420px; 
+      height: 100%; /* Fits exactly inside the locked body */
+      margin: 0 auto;
+      display: flex; 
+      flex-direction: column; 
+      gap: 24px; 
+      padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px;
+      overflow-y: auto; /* Allow internal scrolling for timetable */
+      overscroll-behavior-y: none; /* Stops the pull-to-refresh inside the app */
+      -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
     }
 
     #app-loader {
@@ -94,20 +105,12 @@
     .mono { font-family: 'Space Mono', monospace; }
     .caps { text-transform: uppercase; letter-spacing: 1px; }
 
-    .app-container { 
-      width: 100%; 
-      max-width: 420px; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 24px; 
-      padding: 20px 16px 40px 16px;
-    }
-
     /* Route Tabs */
     .tabs-container {
       display: flex; gap: 8px; padding: 4px;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 100px;
+      flex-shrink: 0;
     }
     .tab {
       flex: 1; text-align: center; padding: 12px 0;
@@ -117,8 +120,8 @@
     .tab.active { background: var(--text-main); color: var(--bg); }
 
     /* Telemetry Bar */
-    .telemetry { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;}
-    .telemetry > div { flex: 1; flex-basis: 0; } /* Forces 3 perfect columns */
+    .telemetry { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-shrink: 0;}
+    .telemetry > div { flex: 1; flex-basis: 0; }
     
     .gps-block { display: flex; align-items: center; gap: 8px; justify-content: flex-start; font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
     .gps-indicator { width: 8px; height: 8px; background: var(--border); border-radius: 50%; }
@@ -126,18 +129,19 @@
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
     
     .weather-block { display: flex; justify-content: center; align-items: center; font-size: 9px; font-weight: 700; color: var(--text-sec); letter-spacing: 1px; text-align: center;}
-    
+    .weather-icon { margin-right: 4px; margin-bottom: -2px; width: 12px; height: 12px; }
+
     .clock-block { display: flex; align-items: baseline; gap: 8px; justify-content: flex-end; }
     .clock-date { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
     .clock-time { font-size: 15px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px;}
 
-    .anim-layer { display: flex; flex-direction: column; flex-grow: 1;}
+    .anim-layer { display: flex; flex-direction: column; flex-grow: 1; flex-shrink: 0;}
 
     /* Main Card */
     .card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 20px; display: flex; flex-direction: column;
-      transition: border-color 0.3s; position: relative;
+      transition: border-color 0.3s; position: relative; flex-shrink: 0;
     }
     body.state-transit .card { border-color: var(--accent); box-shadow: 0 8px 32px var(--accent-muted); }
 
@@ -201,7 +205,7 @@
     .timetable-container {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 20px; padding: 24px; display: flex; flex-direction: column;
-      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0;
     }
     
     .list-row {
@@ -239,7 +243,7 @@
     .flip-in { animation: fadeIn 0.3s ease forwards; }
 
     /* Action Links */
-    .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 8px;}
+    .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 8px; flex-shrink: 0;}
     .action-pill {
       flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
       padding: 14px 16px;
@@ -260,13 +264,11 @@
 
   <div class="app-container">
     
-    <!-- Route Toggles -->
     <div class="tabs-container caps">
       <div class="tab active" id="tab-muiwo" onclick="setRoute('muiwo-central')">MUI WO ➔ CENTRAL</div>
       <div class="tab" id="tab-central" onclick="setRoute('central-muiwo')">CENTRAL ➔ MUI WO</div>
     </div>
 
-    <!-- Telemetry Row with new Weather Block -->
     <div class="telemetry caps">
       <div class="gps-block">
         <div class="gps-indicator" id="gps-light"></div>
@@ -281,12 +283,12 @@
 
     <div class="anim-layer" id="data-layer">
       
-      <!-- Main Card -->
       <div class="card" id="main-card">
         <div class="card-top caps">
           <div style="display: flex; flex-direction: column; align-items: flex-start;">
             <span id="card-status-label">Next Departure</span>
-            <span id="transit-direction" class="mono" style="font-size: 8.5px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1.5px; display: none;"></span>
+            <!-- Always visible sub-label for route direction -->
+            <span id="transit-direction" class="mono" style="font-size: 8.5px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1.5px;"></span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span id="mode-chip">SUN/PH</span>
@@ -315,7 +317,6 @@
         </div>
       </div>
 
-      <!-- Clickable Timetable Section -->
       <div id="timetable-section" style="display: none;">
         <div class="section-title caps">Timetable</div>
         <div class="timetable-container" onclick="toggleTimetableExpansion()">
@@ -327,7 +328,6 @@
 
     </div>
 
-    <!-- Footer Links -->
     <div class="action-links caps">
       <a href="https://www.hko.gov.hk/en/index.html" target="_blank" class="action-pill">
         <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -349,14 +349,6 @@
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err)); }
 
-    // DYNAMIC VIEWPORT LOCK: Calculates physical screen size to prevent browser UI bouncing
-    function setViewport() {
-      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-    }
-    window.addEventListener('resize', setViewport);
-    setViewport();
-
-    // SEAMLESS NOTIFICATION BAR: Blends perfectly with app background hexes
     function syncThemeColor() {
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#09090B' : '#F5F5F5');
@@ -389,14 +381,14 @@
     let lockedActiveTrip = null;
 
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
+    const LANTAU_POLYGON = [[113.840, 22.330], [114.060, 22.330], [114.060, 22.210], [113.840, 22.180]];
 
-    // LANTAU GEOFENCE (Mathematical Ray-Casting Polygon)
-    const LANTAU_POLYGON = [
-      [113.840, 22.330], // North-West Boundary
-      [114.060, 22.330], // North-East Boundary (Disneyland)
-      [114.060, 22.210], // South-East Boundary (Chi Ma Wan)
-      [113.840, 22.180]  // South-West Boundary (Fan Lau)
-    ];
+    // Beautiful SVG icons for weather mapping
+    const WEATHER_ICONS = {
+      fair: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`,
+      rain: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M16 14v6"></path><path d="M8 14v6"></path><path d="M12 16v6"></path></svg>`,
+      warning: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>`
+    };
 
     function isPointInLantau(lon, lat) {
       let inside = false;
@@ -422,22 +414,23 @@
         else if (isBlackRain) { weatherSuspended = true; weatherReason = "BLACK RAIN"; } 
         else { weatherSuspended = false; }
         
-        // Populate specific live weather strings for the telemetry bar
         let activeWeather = [];
-        if (warnings.includes('WTA')) activeWeather.push("AMBER RAIN");
-        if (warnings.includes('WTR')) activeWeather.push("RED RAIN");
+        let currentIcon = WEATHER_ICONS.fair;
+
+        if (warnings.includes('WTA')) { activeWeather.push("AMBER RAIN"); currentIcon = WEATHER_ICONS.rain; }
+        if (warnings.includes('WTR') || warnings.includes('WTB')) { activeWeather.push("RED RAIN"); currentIcon = WEATHER_ICONS.rain; }
         
         let ty = warnings.find(w => w.startsWith('WTY'));
-        if (ty && !isTyphoon) { activeWeather.push(ty.replace('WTY', 'T').substring(0,2)); } // Catches T1, T3
+        if (ty && !isTyphoon) { activeWeather.push(ty.replace('WTY', 'T').substring(0,2)); currentIcon = WEATHER_ICONS.warning; }
         
-        if (warnings.includes('WTTS')) activeWeather.push("THUNDERSTORM");
+        if (warnings.includes('WTTS')) { activeWeather.push("THUNDERSTORM"); currentIcon = WEATHER_ICONS.warning; }
 
         let weatherStr = activeWeather.length > 0 ? activeWeather.join(' / ') : "FAIR";
-        document.getElementById("weather-status").textContent = weatherStr;
+        document.getElementById("weather-status").innerHTML = `${currentIcon} <span>${weatherStr}</span>`;
 
         updateUI(); 
       } catch(e) {
-        document.getElementById("weather-status").textContent = "WX OFFLINE";
+        document.getElementById("weather-status").innerHTML = `${WEATHER_ICONS.fair} <span>WX OFFLINE</span>`;
       }
     }
 
@@ -456,7 +449,6 @@
           const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
           const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
 
-          // Gracefully handle auto-ending the voyage if arriving within 500m of destination
           if (userIsInTransit && !manualTransitForce) {
             const destDist = currentRouteKey === "muiwo-central" ? distToCentral : distToMuiWo;
             if (destDist < 0.50) {
@@ -465,7 +457,6 @@
             }
           }
 
-          // Strict Geofence Auto-Switching
           if (!isManualOverride && !userIsInTransit && !manualTransitForce) {
             const onLantau = isPointInLantau(lon, lat);
             if (onLantau && currentRouteKey !== "muiwo-central") {
@@ -637,13 +628,15 @@
       const cardLabel = document.getElementById("card-status-label");
       const transitDirEl = document.getElementById("transit-direction");
 
+      // Set the dynamic route label text universally
+      transitDirEl.textContent = currentRouteKey === 'muiwo-central' ? "MUI WO ➔ CENTRAL" : "CENTRAL ➔ MUI WO";
+
       if (weatherSuspended) {
         body.className = "state-error";
         actionBtn.style.display = "none";
         timeEl.textContent = "HALT"; timeEl.classList.add("suspended");
         countdownTitle.textContent = "DEPARTING IN";
         cardLabel.style.color = "var(--text-sec)";
-        transitDirEl.style.display = "none";
         countdownEl.textContent = weatherReason;
         mainEtaEl.textContent = "--:--";
         progressBar.style.width = "100%"; 
@@ -659,10 +652,6 @@
         cardLabel.textContent = "IN TRANSIT";
         cardLabel.style.color = "var(--accent)"; 
         
-        // Dynamically displays tiny transit direction text
-        transitDirEl.style.display = "block";
-        transitDirEl.textContent = currentRouteKey === 'muiwo-central' ? "MUI WO ➔ CENTRAL" : "CENTRAL ➔ MUI WO";
-
         actionBtn.textContent = "END";
         countdownTitle.textContent = "ARRIVING IN";
         
@@ -688,7 +677,6 @@
         body.className = "state-standby";
         cardLabel.textContent = "NEXT DEPARTURE";
         cardLabel.style.color = "var(--text-sec)"; 
-        transitDirEl.style.display = "none"; // Hides text in standby
         actionBtn.textContent = "BOARD";
         countdownTitle.textContent = "DEPARTING IN";
       }
