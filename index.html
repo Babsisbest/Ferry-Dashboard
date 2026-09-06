@@ -2,15 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Prevents zooming and locks the scale -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Smart Ferry Dashboard</title>
   
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090B%22/><circle cx=%2250%22 cy=%2250%22 r=%2220%22 fill=%22%23E92D2D%22/></svg>">
 
-  <meta name="theme-color" id="theme-color-meta" content="#000000">
+  <!-- Controlled entirely by JS to seamlessly match the specific background hex -->
+  <meta name="theme-color" id="theme-color-meta" content="#09090B">
+  
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,19 +23,15 @@
   <style>
     :root {
       color-scheme: light dark;
-      
       --bg: #09090B;
       --surface: #18181B;
       --border: #27272A;
       --border-focus: #3F3F46;
-      
       --text-main: #F4F4F5;
       --text-sec: #A1A1AA;
       --text-muted: #71717A;
-      
       --accent: #E92D2D;
       --accent-muted: rgba(233, 45, 45, 0.15);
-      
       --track-bg: #27272A;
       --dot-grid: radial-gradient(circle, #1F1F1F 1px, transparent 1px);
     }
@@ -39,19 +39,15 @@
     @media (prefers-color-scheme: light) {
       :root {
         color-scheme: light;
-        
         --bg: #F5F5F5;
         --surface: #FFFFFF;
         --border: #D4D4D4;
         --border-focus: #A3A3A3;
-        
         --text-main: #000000;
         --text-sec: #555555;
         --text-muted: #888888;
-        
         --accent: #D02121;
         --accent-muted: rgba(208, 33, 33, 0.1);
-        
         --track-bg: #E5E5E5;
         --dot-grid: radial-gradient(circle, #DDDDDD 1px, transparent 1px);
       }
@@ -59,26 +55,12 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-    /* NATIVE BROWSER SCROLL LOCK - Prevents URL bar stretching */
+    /* ULTIMATE VIEWPORT SCROLL LOCK (No absolute positioning required) */
     html, body {
       width: 100%;
-      height: 100vh; /* Fallback */
-      height: calc(var(--vh, 1vh) * 100);
-      margin: 0;
-      padding: 0;
-      overflow: hidden; 
+      margin: 0; padding: 0;
       background-color: var(--bg); 
-      transition: background-color 0.3s ease;
-    }
-
-    .app-wrapper {
-      position: absolute;
-      inset: 0; 
-      height: calc(var(--vh, 1vh) * 100);
-      overflow-y: auto; 
-      overscroll-behavior-y: none; 
-      display: flex;
-      justify-content: center;
+      overscroll-behavior-y: none; /* Stops the bounce natively */
     }
 
     body {
@@ -87,9 +69,13 @@
       background-image: var(--dot-grid);
       background-size: 16px 16px;
       background-position: center top;
+      display: flex;
+      justify-content: center;
+      /* Locked exactly to the browser's dynamic viewport height via JS */
+      min-height: 100vh; 
+      min-height: calc(var(--vh, 1vh) * 100);
     }
 
-    /* Subtle Hardware Loading Screen */
     #app-loader {
       position: fixed; inset: 0; background: var(--bg); z-index: 9999;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -109,9 +95,12 @@
     .caps { text-transform: uppercase; letter-spacing: 1px; }
 
     .app-container { 
-      width: 100%; max-width: 420px; 
-      display: flex; flex-direction: column; gap: 24px; 
-      padding: 20px 16px 40px 16px; min-height: max-content;
+      width: 100%; 
+      max-width: 420px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 24px; 
+      padding: 20px 16px 40px 16px;
     }
 
     /* Route Tabs */
@@ -127,18 +116,16 @@
     }
     .tab.active { background: var(--text-main); color: var(--bg); }
 
-    /* 3-Column Telemetry Grid */
-    .telemetry { 
-      display: grid; grid-template-columns: 1fr auto 1fr; align-items: flex-end; 
-      padding: 0 4px 12px 4px; border-bottom: 1px solid var(--border);
-    }
-    .gps-block { display: flex; align-items: center; gap: 8px; justify-content: flex-start;}
-    .gps-status { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
+    /* Telemetry Bar */
+    .telemetry { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;}
+    .telemetry > div { flex: 1; flex-basis: 0; } /* Forces 3 perfect columns */
+    
+    .gps-block { display: flex; align-items: center; gap: 8px; justify-content: flex-start; font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
     .gps-indicator { width: 8px; height: 8px; background: var(--border); border-radius: 50%; }
     .gps-indicator.active { background: var(--accent); box-shadow: 0 0 8px var(--accent-muted); animation: blink 2s infinite; }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
     
-    .weather-block { font-size: 9px; font-weight: 700; color: var(--text-sec); letter-spacing: 1px; text-align: center; white-space: nowrap;}
+    .weather-block { display: flex; justify-content: center; align-items: center; font-size: 9px; font-weight: 700; color: var(--text-sec); letter-spacing: 1px; text-align: center;}
     
     .clock-block { display: flex; align-items: baseline; gap: 8px; justify-content: flex-end; }
     .clock-date { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px;}
@@ -159,10 +146,584 @@
       font-size: 11px; font-weight: 700; color: var(--text-sec); 
       padding: 24px 24px 16px 24px;
     }
-    
     #card-status-label { transition: color 0.3s ease; }
-    #transit-route-label { display: none; font-size: 8px; color: var(--text-muted); letter-spacing: 1px; margin-top: 4px; }
 
     .time-flex { 
       display: flex; justify-content: space-between; align-items: flex-end; 
-      padding: 0 24px 24
+      padding: 0 24px 24px 24px;
+    }
+    .huge-time { font-size: 76px; font-weight: 700; letter-spacing: -4px; line-height: 0.85; margin-left: -4px;}
+    .huge-time.suspended { font-size: 36px; color: var(--accent); letter-spacing: -1px; line-height: 1; margin-left: 0; }
+    
+    .eta-box { text-align: right; display: flex; flex-direction: column; gap: 4px;}
+    .eta-label { font-size: 10px; font-weight: 700; color: var(--text-muted); }
+    .eta-val { font-size: 20px; font-weight: 700; letter-spacing: -1px;}
+
+    /* Solid Padded Progress Track */
+    .track-wrapper { 
+      position: relative; 
+      width: calc(100% - 48px);
+      height: 6px; 
+      background: var(--track-bg); 
+      margin: 0 auto; 
+      border-radius: 100px; 
+      overflow: hidden;
+    }
+    .track-fill { 
+      position: absolute; left: 0; top: 0; height: 100%; width: 0%;
+      background: var(--accent); transition: width 1s linear;
+      border-radius: 100px;
+    }
+
+    /* Baseline Alignment */
+    .card-actions { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 16px 24px; background: rgba(0,0,0,0.15); border-radius: 0 0 20px 20px;
+      margin-top: 24px;
+    }
+    
+    .countdown-group { display: flex; flex-direction: column; gap: 2px; }
+    .countdown-title { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; transition: color 0.3s ease; }
+    .countdown-val { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+    
+    .btn {
+      background: var(--bg); border: 1px solid var(--border-focus); color: var(--text-main);
+      padding: 10px 24px; border-radius: 100px; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn:active { transform: scale(0.96); background: var(--border); }
+    
+    body.state-transit .btn { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+    /* Timetable Section Outside */
+    .section-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 18px 0 10px 4px; letter-spacing: 1.5px;}
+    
+    .timetable-container {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 24px; display: flex; flex-direction: column;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    
+    .list-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 0; border-bottom: 1px solid var(--border);
+    }
+    .list-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .list-row:first-child { padding-top: 0; }
+    
+    .row-left { display: flex; align-items: baseline; gap: 16px; }
+    .row-time { font-size: 20px; font-weight: 700; letter-spacing: -1px; }
+    .row-arr { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .row-in { font-size: 14px; font-weight: 700; color: var(--text-sec); font-variant-numeric: tabular-nums;}
+    
+    .tmrw-tag { 
+      background: var(--text-main); color: var(--bg); font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 8px;
+    }
+
+    .expandable-area { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .expandable-area.open { max-height: 1200px; }
+    
+    .expand-btn {
+      width: 100%; background: transparent; border: none; border-top: 1px solid var(--border);
+      color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 700;
+      padding: 18px 0 0 0; margin-top: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      transition: color 0.2s;
+    }
+    .expand-btn:active { color: var(--text-main); }
+
+    /* Animations */
+    @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.98); } }
+    @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+    .flip-out { animation: fadeOut 0.2s ease forwards; }
+    .flip-in { animation: fadeIn 0.3s ease forwards; }
+
+    /* Action Links */
+    .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 8px;}
+    .action-pill {
+      flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+      padding: 14px 16px;
+      border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
+      text-decoration: none; color: var(--text-muted); font-size: 11px; font-weight: 700; transition: all 0.2s;
+    }
+    .action-pill:active { border-color: var(--border-focus); color: var(--text-main); transform: scale(0.96); }
+    .action-icon { width: 14px; height: 14px; fill: currentColor; }
+
+  </style>
+</head>
+<body id="app-body" class="state-standby">
+
+  <div id="app-loader">
+    <div class="loader-dot"></div>
+    <div class="loader-text mono">SYSTEM_BOOT // READY</div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Route Toggles -->
+    <div class="tabs-container caps">
+      <div class="tab active" id="tab-muiwo" onclick="setRoute('muiwo-central')">MUI WO ➔ CENTRAL</div>
+      <div class="tab" id="tab-central" onclick="setRoute('central-muiwo')">CENTRAL ➔ MUI WO</div>
+    </div>
+
+    <!-- Telemetry Row with new Weather Block -->
+    <div class="telemetry caps">
+      <div class="gps-block">
+        <div class="gps-indicator" id="gps-light"></div>
+        <span id="location-status">Locating</span>
+      </div>
+      <div class="weather-block mono" id="weather-status">--</div>
+      <div class="clock-block">
+        <div class="clock-date mono" id="now-date">--</div>
+        <div class="clock-time mono" id="now-time">--:--</div>
+      </div>
+    </div>
+
+    <div class="anim-layer" id="data-layer">
+      
+      <!-- Main Card -->
+      <div class="card" id="main-card">
+        <div class="card-top caps">
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <span id="card-status-label">Next Departure</span>
+            <span id="transit-direction" class="mono" style="font-size: 8.5px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1.5px; display: none;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="mode-chip">SUN/PH</span>
+            <span id="fare-chip" class="mono">HK$0.0</span>
+          </div>
+        </div>
+        
+        <div class="time-flex">
+          <div class="huge-time" id="next-time">--:--</div>
+          <div class="eta-box">
+            <div class="eta-label caps">Arrival</div>
+            <div class="eta-val mono" id="main-eta">--:--</div>
+          </div>
+        </div>
+
+        <div class="track-wrapper">
+          <div class="track-fill" id="progress-bar"></div>
+        </div>
+
+        <div class="card-actions">
+          <div class="countdown-group">
+            <div class="countdown-title caps">DEPARTING IN</div>
+            <div class="countdown-val mono" id="countdown">--:--</div>
+          </div>
+          <button class="btn" id="action-btn" onclick="forceTransitToggle()">BOARD</button>
+        </div>
+      </div>
+
+      <!-- Clickable Timetable Section -->
+      <div id="timetable-section" style="display: none;">
+        <div class="section-title caps">Timetable</div>
+        <div class="timetable-container" onclick="toggleTimetableExpansion()">
+          <div id="timetable-list"></div>
+          <div class="expandable-area" id="expanded-timetable"></div>
+          <button class="expand-btn" id="expand-btn">EXPAND ROSTER ▾</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Links -->
+    <div class="action-links caps">
+      <a href="https://www.hko.gov.hk/en/index.html" target="_blank" class="action-pill">
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+        </svg>
+        HKO
+      </a>
+      <a href="https://www.sunferry.com.hk/en/route-and-fare" target="_blank" class="action-pill">
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+          <line x1="4" y1="22" x2="4" y2="15"></line>
+        </svg>
+        Sun Ferry
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err)); }
+
+    // DYNAMIC VIEWPORT LOCK: Calculates physical screen size to prevent browser UI bouncing
+    function setViewport() {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    }
+    window.addEventListener('resize', setViewport);
+    setViewport();
+
+    // SEAMLESS NOTIFICATION BAR: Blends perfectly with app background hexes
+    function syncThemeColor() {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#09090B' : '#F5F5F5');
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeColor);
+    syncThemeColor();
+
+    const TIMETABLES = {
+      "muiwo-central": {
+        weekday: ["03:40","05:55","06:20","06:50","07:15","07:40","08:10","08:40","09:10","09:40","10:10","10:40","11:10","11:40","12:10","12:40","13:10","13:40","14:10","14:40","15:10","15:40","16:10","16:40","17:10","17:40","18:10","18:40","19:10","19:40","20:10","20:40","21:10","21:40","22:10","22:40","23:10","23:40"],
+        sunday: ["03:40","06:20","07:05","08:00","08:40","09:20","10:00","10:40","11:20","12:00","12:40","13:20","14:00","14:40","15:20","16:00","16:40","17:20","18:00","18:40","19:20","20:00","20:40","21:20","22:00","22:40","23:20"]
+      },
+      "central-muiwo": {
+        weekday: ["03:00","07:00","07:40","08:30","09:00","09:50","10:30","11:30","12:30","13:30","14:30","15:20","16:00","16:40","17:20","18:00","18:40","19:30","20:10","21:00","21:50","22:40","23:30","00:30"],
+        sunday: ["03:00","07:00","07:40","08:20","09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00","21:40","22:20","23:00","23:40","00:30"]
+      }
+    };
+    
+    const FARES = { weekday: "33.50", sunday: "48.50" };
+    const JOURNEY_DURATION_MINS = 35;
+
+    let currentRouteKey = "muiwo-central"; 
+    let isManualOverride = false;
+    let isExpanded = false;
+    let dynamicHolidays = new Set(["2026-01-01", "2026-09-06", "2026-12-25"]);
+    let weatherSuspended = false; let weatherReason = "";
+    
+    let userIsInTransit = false;
+    let manualTransitForce = false;
+    let lockedActiveTrip = null;
+
+    const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
+
+    // LANTAU GEOFENCE (Mathematical Ray-Casting Polygon)
+    const LANTAU_POLYGON = [
+      [113.840, 22.330], // North-West Boundary
+      [114.060, 22.330], // North-East Boundary (Disneyland)
+      [114.060, 22.210], // South-East Boundary (Chi Ma Wan)
+      [113.840, 22.180]  // South-West Boundary (Fan Lau)
+    ];
+
+    function isPointInLantau(lon, lat) {
+      let inside = false;
+      for (let i = 0, j = LANTAU_POLYGON.length - 1; i < LANTAU_POLYGON.length; j = i++) {
+        const xi = LANTAU_POLYGON[i][0], yi = LANTAU_POLYGON[i][1];
+        const xj = LANTAU_POLYGON[j][0], yj = LANTAU_POLYGON[j][1];
+        const intersect = ((yi > lat) != (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    async function checkWeather() {
+      try {
+        const res = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en");
+        const data = await res.json();
+        const warnings = Object.keys(data);
+        
+        const isTyphoon = warnings.some(k => k.startsWith("WTY8") || k.startsWith("WTY9") || k.startsWith("WTY10"));
+        const isBlackRain = warnings.some(k => k.startsWith("WTB"));
+        
+        if (isTyphoon) { weatherSuspended = true; weatherReason = "T8+ SIGNAL ACTIVE"; } 
+        else if (isBlackRain) { weatherSuspended = true; weatherReason = "BLACK RAIN"; } 
+        else { weatherSuspended = false; }
+        
+        // Populate specific live weather strings for the telemetry bar
+        let activeWeather = [];
+        if (warnings.includes('WTA')) activeWeather.push("AMBER RAIN");
+        if (warnings.includes('WTR')) activeWeather.push("RED RAIN");
+        
+        let ty = warnings.find(w => w.startsWith('WTY'));
+        if (ty && !isTyphoon) { activeWeather.push(ty.replace('WTY', 'T').substring(0,2)); } // Catches T1, T3
+        
+        if (warnings.includes('WTTS')) activeWeather.push("THUNDERSTORM");
+
+        let weatherStr = activeWeather.length > 0 ? activeWeather.join(' / ') : "FAIR";
+        document.getElementById("weather-status").textContent = weatherStr;
+
+        updateUI(); 
+      } catch(e) {
+        document.getElementById("weather-status").textContent = "WX OFFLINE";
+      }
+    }
+
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371, dLat = (lat2 - lat1) * (Math.PI / 180), dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function initLocation() {
+      const light = document.getElementById("gps-light");
+      if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition((pos) => {
+          light.classList.add("active");
+          const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+          const distToCentral = getDistanceFromLatLonInKm(lat, lon, COORDS.central.lat, COORDS.central.lon);
+          const distToMuiWo = getDistanceFromLatLonInKm(lat, lon, COORDS.muiwo.lat, COORDS.muiwo.lon);
+
+          // Gracefully handle auto-ending the voyage if arriving within 500m of destination
+          if (userIsInTransit && !manualTransitForce) {
+            const destDist = currentRouteKey === "muiwo-central" ? distToCentral : distToMuiWo;
+            if (destDist < 0.50) {
+              userIsInTransit = false;
+              lockedActiveTrip = null;
+            }
+          }
+
+          // Strict Geofence Auto-Switching
+          if (!isManualOverride && !userIsInTransit && !manualTransitForce) {
+            const onLantau = isPointInLantau(lon, lat);
+            if (onLantau && currentRouteKey !== "muiwo-central") {
+              setRoute("muiwo-central", false);
+            } else if (!onLantau && currentRouteKey !== "central-muiwo") {
+              setRoute("central-muiwo", false);
+            }
+          }
+          document.getElementById("location-status").textContent = "GPS LOCKED";
+          updateUI();
+        }, () => { 
+          light.classList.remove("active"); 
+          document.getElementById("location-status").textContent = "TELEMETRY OFFLINE";
+        }, 
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 });
+      }
+    }
+
+    function forceTransitToggle() {
+      manualTransitForce = !manualTransitForce;
+      userIsInTransit = manualTransitForce;
+      if (!userIsInTransit) lockedActiveTrip = null;
+      document.getElementById("location-status").textContent = userIsInTransit ? "MANUAL OVERRIDE" : "GPS LOCKED";
+      updateUI();
+    }
+
+    function setRoute(routeKey, isManual = true) {
+      if (currentRouteKey === routeKey) return;
+      if (isManual) isManualOverride = true;
+      
+      document.getElementById("tab-muiwo").classList.remove("active");
+      document.getElementById("tab-central").classList.remove("active");
+      
+      if (routeKey === "muiwo-central") {
+        document.getElementById("tab-muiwo").classList.add("active");
+      } else {
+        document.getElementById("tab-central").classList.add("active");
+      }
+      
+      currentRouteKey = routeKey;
+      
+      const layer = document.getElementById("data-layer");
+      layer.classList.remove("flip-in"); layer.classList.add("flip-out");
+      setTimeout(() => {
+        updateUI(); 
+        layer.classList.remove("flip-out"); layer.classList.add("flip-in");
+      }, 200);
+    }
+
+    function toggleTimetableExpansion() {
+      isExpanded = !isExpanded;
+      updateUI();
+    }
+
+    function pad(num) { return num.toString().padStart(2, "0"); }
+    function parseTimeToMinutes(str) { const [h, m] = str.split(":").map(Number); return h * 60 + m; }
+    
+    function calculateArrivalTime(timeStr, durationMins) {
+      const [h, m] = timeStr.split(":").map(Number);
+      let totalMins = (h * 60 + m + durationMins) % 1440;
+      return `${pad(Math.floor(totalMins / 60))}:${pad(totalMins % 60)}`;
+    }
+
+    function getScheduleForDay(date) {
+      const day = date.getDay();
+      const dateFormatted = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      if (day === 0 || dynamicHolidays.has(dateFormatted)) return { key: "sunday", label: "SUN/PH" };
+      return { key: "weekday", label: "WKDAY" };
+    }
+
+    function formatCountdown(diffSecs) {
+      if (diffSecs <= 0) return "00:00";
+      const totalMins = Math.floor(diffSecs / 60);
+      const secs = diffSecs % 60;
+      const hours = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      
+      if (hours > 0) {
+        return `${hours}h ${pad(mins)}m`;
+      } else {
+        return `${pad(mins)}:${pad(secs)}`;
+      }
+    }
+
+    function buildTimetableList(wrappedTimes, nextMinutes, nowSecsTotal) {
+      const container = document.getElementById("timetable-list");
+      container.innerHTML = "";
+
+      const upcoming = wrappedTimes.filter((t) => t.mins > nextMinutes);
+      const visibleTimes = isExpanded ? upcoming : upcoming.slice(0, 3);
+
+      visibleTimes.forEach((t) => {
+        const row = document.createElement("div"); row.className = "list-row";
+        const diffSecs = (t.mins * 60) - nowSecsTotal; const diffMins = Math.floor(diffSecs / 60);
+        let subCountStr = "NOW";
+        if (diffMins > 0) {
+          let h = Math.floor(diffMins / 60); let m = diffMins % 60;
+          subCountStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+        }
+        
+        const arrivalStr = calculateArrivalTime(t.str, JOURNEY_DURATION_MINS);
+        const tmrwIndicator = t.isTomorrow ? `<span class="tmrw-tag">TMRW</span>` : '';
+        
+        row.innerHTML = `
+          <div class="row-left">
+            <span class="row-time mono">${t.str}</span>
+            <span class="row-arr caps">ARR <span class="mono">${arrivalStr}</span>${tmrwIndicator}</span>
+          </div>
+          <div class="row-in mono">${subCountStr}</div>`;
+        container.appendChild(row);
+      });
+
+      const section = document.getElementById("timetable-section");
+      const btn = document.getElementById("expand-btn");
+      if (upcoming.length === 0) {
+        section.style.display = "none";
+      } else {
+        section.style.display = "block";
+        if (upcoming.length <= 3) {
+          btn.style.display = "none";
+        } else {
+          btn.style.display = "block";
+          btn.textContent = isExpanded ? "COLLAPSE ROSTER ▴" : "EXPAND ROSTER ▾";
+        }
+      }
+    }
+
+    function updateUI() {
+      const body = document.getElementById("app-body");
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes(); 
+      const nowSecsTotal = (nowMins * 60) + now.getSeconds();
+      const routeData = TIMETABLES[currentRouteKey]; 
+      
+      const scheduleInfoToday = getScheduleForDay(now);
+      const timesToday = routeData[scheduleInfoToday.key];
+
+      let tomorrow = new Date(now.getTime() + 86400000);
+      let scheduleInfoTomorrow = getScheduleForDay(tomorrow);
+      let timesTomorrow = routeData[scheduleInfoTomorrow.key];
+
+      let wrappedTimes = [];
+      timesToday.forEach(t => {
+        let m = parseTimeToMinutes(t);
+        if (m < 180 && nowMins > 1200) m += 1440; 
+        wrappedTimes.push({ str: t, mins: m, isTomorrow: false });
+      });
+      timesTomorrow.forEach(t => {
+        let m = parseTimeToMinutes(t);
+        if (m < 180) m += 1440; 
+        wrappedTimes.push({ str: t, mins: m + 1440, isTomorrow: true });
+      });
+      wrappedTimes.sort((a, b) => a.mins - b.mins);
+
+      document.getElementById("mode-chip").textContent = scheduleInfoToday.label;
+      document.getElementById("fare-chip").textContent = `HK$${FARES[scheduleInfoToday.key]}`;
+      
+      let dateOptions = { weekday: "short", day: "numeric", month: "short" };
+      document.getElementById("now-date").textContent = now.toLocaleDateString('en-GB', dateOptions);
+      document.getElementById("now-time").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      const timeEl = document.getElementById("next-time");
+      const countdownTitle = document.querySelector(".countdown-title");
+      const countdownEl = document.getElementById("countdown");
+      const mainEtaEl = document.getElementById("main-eta");
+      const progressBar = document.getElementById("progress-bar");
+      
+      const actionBtn = document.getElementById("action-btn");
+      const cardLabel = document.getElementById("card-status-label");
+      const transitDirEl = document.getElementById("transit-direction");
+
+      if (weatherSuspended) {
+        body.className = "state-error";
+        actionBtn.style.display = "none";
+        timeEl.textContent = "HALT"; timeEl.classList.add("suspended");
+        countdownTitle.textContent = "DEPARTING IN";
+        cardLabel.style.color = "var(--text-sec)";
+        transitDirEl.style.display = "none";
+        countdownEl.textContent = weatherReason;
+        mainEtaEl.textContent = "--:--";
+        progressBar.style.width = "100%"; 
+        document.getElementById("timetable-section").style.display = "none";
+        return;
+      } else {
+        timeEl.classList.remove("suspended");
+        actionBtn.style.display = "block";
+      }
+
+      if (userIsInTransit) {
+        body.className = "state-transit";
+        cardLabel.textContent = "IN TRANSIT";
+        cardLabel.style.color = "var(--accent)"; 
+        
+        // Dynamically displays tiny transit direction text
+        transitDirEl.style.display = "block";
+        transitDirEl.textContent = currentRouteKey === 'muiwo-central' ? "MUI WO ➔ CENTRAL" : "CENTRAL ➔ MUI WO";
+
+        actionBtn.textContent = "END";
+        countdownTitle.textContent = "ARRIVING IN";
+        
+        if (!lockedActiveTrip) {
+          let departedTimes = wrappedTimes.filter(t => t.mins <= nowMins);
+          lockedActiveTrip = departedTimes.length > 0 ? departedTimes[departedTimes.length - 1] : wrappedTimes[wrappedTimes.length - 1];
+        }
+        
+        timeEl.textContent = lockedActiveTrip.str;
+        const arrivalStr = calculateArrivalTime(lockedActiveTrip.str, JOURNEY_DURATION_MINS);
+        mainEtaEl.textContent = arrivalStr;
+
+        let tripElapsedSecs = nowSecsTotal - (lockedActiveTrip.mins * 60);
+        let timePct = Math.max(0, Math.min((tripElapsedSecs / (JOURNEY_DURATION_MINS * 60)) * 100, 100));
+        let remainingSecs = Math.max(0, (JOURNEY_DURATION_MINS * 60) - tripElapsedSecs);
+
+        progressBar.style.width = `${timePct}%`;
+        countdownEl.textContent = remainingSecs === 0 ? "BOARDING" : formatCountdown(remainingSecs);
+        
+        buildTimetableList(wrappedTimes, lockedActiveTrip.mins, nowSecsTotal);
+        return;
+      } else {
+        body.className = "state-standby";
+        cardLabel.textContent = "NEXT DEPARTURE";
+        cardLabel.style.color = "var(--text-sec)"; 
+        transitDirEl.style.display = "none"; // Hides text in standby
+        actionBtn.textContent = "BOARD";
+        countdownTitle.textContent = "DEPARTING IN";
+      }
+
+      let nextTimeObj = wrappedTimes.find(t => t.mins >= nowMins);
+      if (!nextTimeObj && wrappedTimes.length > 0) { nextTimeObj = wrappedTimes[0]; }
+
+      if (nextTimeObj) {
+        timeEl.textContent = nextTimeObj.str;
+        const arrivalStr = calculateArrivalTime(nextTimeObj.str, JOURNEY_DURATION_MINS);
+        mainEtaEl.textContent = arrivalStr;
+
+        const diffSecs = (nextTimeObj.mins * 60) - nowSecsTotal;
+        
+        let elapsedSecs = 3600 - diffSecs;
+        let pct = Math.max(0, Math.min((elapsedSecs / 3600) * 100, 100)); 
+        progressBar.style.width = `${pct}%`;
+
+        countdownEl.textContent = formatCountdown(diffSecs);
+      }
+      buildTimetableList(wrappedTimes, nextTimeObj ? nextTimeObj.mins : Infinity, nowSecsTotal);
+    }
+
+    window.addEventListener('load', () => {
+      checkWeather(); initLocation(); updateUI(); 
+      setInterval(updateUI, 1000); setInterval(checkWeather, 60000 * 5);
+      
+      setTimeout(() => {
+        const loader = document.getElementById('app-loader');
+        if (loader) {
+          loader.style.opacity = '0';
+          setTimeout(() => loader.remove(), 400);
+        }
+      }, 350);
+    });
+  </script>
+</body>
+</html>
