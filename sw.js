@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ferry-cache-v4'; // Bumped to v4 to force a clean slate
+const CACHE_NAME = 'ferry-cache-v6'; // Bumped to v6 to force update
 const assetsToCache = [
   './',
   './index.html',
@@ -19,10 +19,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            // This deletes v1, v2, and v3 caches automatically
-            return caches.delete(key); 
-          }
+          if (key !== CACHE_NAME) { return caches.delete(key); }
         })
       );
     })
@@ -31,13 +28,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Always bypass cache for HKO weather data to ensure live warnings
   if (event.request.url.includes('weather.gov.hk')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // For HTML / Navigation requests, use a Network-First strategy
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
       fetch(event.request)
@@ -47,14 +42,11 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           });
         })
-        .catch(() => {
-          return caches.match(event.request);
-        })
+        .catch(() => { return caches.match(event.request); })
     );
     return;
   }
 
-  // For other static assets, use Cache-First with background update
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
