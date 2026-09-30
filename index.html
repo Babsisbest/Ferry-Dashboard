@@ -53,14 +53,13 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-    /* ULTIMATE BROWSER WIGGLE FIX: Locks the body completely */
     html, body {
       width: 100%;
-      height: 100%; /* Strictly restrains to the current window size */
+      height: 100%; 
       margin: 0; 
       padding: 0;
-      overflow: hidden; /* Body CANNOT scroll */
-      overscroll-behavior: none; /* Stops the OS bounce */
+      overflow: hidden; 
+      overscroll-behavior: none; 
       background-color: var(--bg);
     }
 
@@ -72,19 +71,18 @@
       background-position: center top;
     }
 
-    /* SCROLL ISOLATION: The container handles its own scrolling securely */
     .app-container { 
       width: 100%; 
       max-width: 420px; 
-      height: 100%; /* Fits exactly inside the locked body */
+      height: 100%; 
       margin: 0 auto;
       display: flex; 
       flex-direction: column; 
       gap: 24px; 
       padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px;
-      overflow-y: auto; /* Allow internal scrolling for timetable */
-      overscroll-behavior-y: none; /* Stops the pull-to-refresh inside the app */
-      -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+      overflow-y: auto; 
+      overscroll-behavior-y: none; 
+      -webkit-overflow-scrolling: touch; 
     }
 
     #app-loader {
@@ -105,7 +103,6 @@
     .mono { font-family: 'Space Mono', monospace; }
     .caps { text-transform: uppercase; letter-spacing: 1px; }
 
-    /* Route Tabs */
     .tabs-container {
       display: flex; gap: 8px; padding: 4px;
       background: var(--surface); border: 1px solid var(--border);
@@ -119,7 +116,6 @@
     }
     .tab.active { background: var(--text-main); color: var(--bg); }
 
-    /* Telemetry Bar */
     .telemetry { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-shrink: 0;}
     .telemetry > div { flex: 1; flex-basis: 0; }
     
@@ -137,7 +133,6 @@
 
     .anim-layer { display: flex; flex-direction: column; flex-grow: 1; flex-shrink: 0;}
 
-    /* Main Card */
     .card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 20px; display: flex; flex-direction: column;
@@ -163,7 +158,6 @@
     .eta-label { font-size: 10px; font-weight: 700; color: var(--text-muted); }
     .eta-val { font-size: 20px; font-weight: 700; letter-spacing: -1px;}
 
-    /* Solid Padded Progress Track */
     .track-wrapper { 
       position: relative; 
       width: calc(100% - 48px);
@@ -179,7 +173,6 @@
       border-radius: 100px;
     }
 
-    /* Baseline Alignment */
     .card-actions { 
       display: flex; justify-content: space-between; align-items: center; 
       padding: 16px 24px; background: rgba(0,0,0,0.15); border-radius: 0 0 20px 20px;
@@ -199,7 +192,6 @@
     
     body.state-transit .btn { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 
-    /* Timetable Section Outside */
     .section-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 18px 0 10px 4px; letter-spacing: 1.5px;}
     
     .timetable-container {
@@ -236,13 +228,11 @@
     }
     .expand-btn:active { color: var(--text-main); }
 
-    /* Animations */
     @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.98); } }
     @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
     .flip-out { animation: fadeOut 0.2s ease forwards; }
     .flip-in { animation: fadeIn 0.3s ease forwards; }
 
-    /* Action Links */
     .action-links { display: flex; gap: 12px; margin-top: auto; padding-top: 8px; flex-shrink: 0;}
     .action-pill {
       flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
@@ -287,7 +277,6 @@
         <div class="card-top caps">
           <div style="display: flex; flex-direction: column; align-items: flex-start;">
             <span id="card-status-label">Next Departure</span>
-            <!-- Always visible sub-label for route direction -->
             <span id="transit-direction" class="mono" style="font-size: 8.5px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1.5px;"></span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -358,12 +347,12 @@
 
     const TIMETABLES = {
       "muiwo-central": {
-        weekday: ["03:40","05:55","06:20","06:50","07:15","07:40","08:10","08:40","09:10","09:40","10:10","10:40","11:10","11:40","12:10","12:40","13:10","13:40","14:10","14:40","15:10","15:40","16:10","16:40","17:10","17:40","18:10","18:40","19:10","19:40","20:10","20:40","21:10","21:40","22:10","22:40","23:10","23:40"],
-        sunday: ["03:40","06:20","07:05","08:00","08:40","09:20","10:00","10:40","11:20","12:00","12:40","13:20","14:00","14:40","15:20","16:00","16:40","17:20","18:00","18:40","19:20","20:00","20:40","21:20","22:00","22:40","23:20"]
+        weekday: ["03:40","05:55","06:20","06:50","07:15","07:45","08:05","08:30","09:00","09:30","10:00","10:40","11:30","12:10","12:50","13:30","14:10","14:50","15:30","16:10","16:50","17:30","18:10","18:40","19:40","20:30","21:30","22:40","23:30"],
+        sunday: ["03:40","06:20","07:05","08:00","08:40","09:20","10:00","10:40","11:20","12:00","12:40","13:20","14:00","14:40","15:20","16:00","16:40","17:20","18:00","18:40","19:20","20:00","20:40","21:20","22:00","22:50","23:30"]
       },
       "central-muiwo": {
-        weekday: ["03:00","07:00","07:40","08:30","09:00","09:50","10:30","11:30","12:30","13:30","14:30","15:20","16:00","16:40","17:20","18:00","18:40","19:30","20:10","21:00","21:50","22:40","23:30","00:30"],
-        sunday: ["03:00","07:00","07:40","08:20","09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00","21:40","22:20","23:00","23:40","00:30"]
+        weekday: ["03:00","06:10","07:00","07:40","08:30","09:00","09:50","10:30","11:10","11:50","12:30","13:10","13:50","14:30","15:10","15:50","16:30","17:20","17:40","18:00","18:30","19:00","19:30","20:00","20:40","21:20","22:00","22:45","23:30","00:30"],
+        sunday: ["03:00","07:00","08:00","08:30","09:00","09:40","10:20","11:00","12:00","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00","21:40","22:20","23:00","23:40","00:30"]
       }
     };
     
@@ -373,7 +362,7 @@
     let currentRouteKey = "muiwo-central"; 
     let isManualOverride = false;
     let isExpanded = false;
-    let dynamicHolidays = new Set(["2026-01-01", "2026-09-06", "2026-12-25"]);
+    let dynamicHolidays = new Set(["2026-01-01", "2026-09-06", "2026-12-25", "2026-10-01", "2026-10-26"]);
     let weatherSuspended = false; let weatherReason = "";
     
     let userIsInTransit = false;
@@ -383,7 +372,6 @@
     const COORDS = { central: { lat: 22.2871, lon: 114.1616 }, muiwo: { lat: 22.2647, lon: 113.9995 } };
     const LANTAU_POLYGON = [[113.840, 22.330], [114.060, 22.330], [114.060, 22.210], [113.840, 22.180]];
 
-    // Beautiful SVG icons for weather mapping
     const WEATHER_ICONS = {
       fair: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`,
       rain: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M16 14v6"></path><path d="M8 14v6"></path><path d="M12 16v6"></path></svg>`,
@@ -628,7 +616,6 @@
       const cardLabel = document.getElementById("card-status-label");
       const transitDirEl = document.getElementById("transit-direction");
 
-      // Set the dynamic route label text universally
       transitDirEl.textContent = currentRouteKey === 'muiwo-central' ? "MUI WO ➔ CENTRAL" : "CENTRAL ➔ MUI WO";
 
       if (weatherSuspended) {
